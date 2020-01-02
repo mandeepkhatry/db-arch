@@ -5,15 +5,51 @@ import (
 	"db-arch/model"
 	"db-arch/pb/document"
 	"encoding/json"
+	"net/http"
 
 	"fmt"
-	"google.golang.org/grpc"
 	"log"
+
+	"github.com/gorilla/mux"
+	"google.golang.org/grpc"
 )
+
+func postDocument(logger chan model.Document) func(http.ResponseWriter, *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		fmt.Println("inside")
+
+		data := make(map[string]interface{})
+
+		err := json.NewDecoder(r.Body).Decode(&data)
+
+		if err != nil {
+			panic(err)
+		}
+		d := model.Document{
+			Database:   data["database"].(string),
+			Collection: data["collection"].(string),
+			Namespace:  data["namespace"].(string),
+			Data:       data["data"],
+		}
+		fmt.Println(d)
+		logger <- d
+		fmt.Println("here")
+	}
+}
 
 func main() {
 
+	handlerChannel := make(chan model.Document, 10)
+
+	no_exit := make(chan string)
+
+	fmt.Println("Checking")
+
+	fmt.Println("Starting GRPC client ...")
 	conn, err := grpc.Dial("localhost:50051", grpc.WithInsecure())
+
+	//register client
+	c := document.NewDocumentServiceClient(conn)
 
 	if err != nil {
 		log.Fatalf("Client couldn't connect to server %v", err)
@@ -21,21 +57,29 @@ func main() {
 	}
 	//close connection when program closes
 	defer conn.Close()
-	//register client
-	c := document.NewDocumentServiceClient(conn)
 
-	data := make(map[string]string)
+	go func() {
+		fmt.Println("Here")
+		for {
+			val, ok := <-handlerChannel
+			if ok {
+				fmt.Println("Here from channel : ", val)
 
-	data["Name"] = "Mandeep"
+				sendDocument(c, val)
+			}
+		}
 
-	d := model.Document{
-		Database:   "db1",
-		Collection: "c1",
-		Namespace:  "n1",
-		Data:       data,
-	}
+	}()
 
-	sendDocument(c, d)
+	router := mux.NewRouter()
+
+	fmt.Println("Starting client ...")
+
+	router.HandleFunc("/documents", postDocument(handlerChannel)).Methods("POST")
+
+	http.ListenAndServe(":8000", router)
+
+	<-no_exit
 
 }
 

@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"db-arch/pb/document"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net"
@@ -10,6 +11,27 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 )
+
+//TODO
+
+func buildData(data []byte) {
+
+	var data_interface map[string]interface{}
+
+	err := json.Unmarshal(data, &data_interface)
+
+	if err != nil {
+		panic(err)
+	}
+
+	for k, v := range data_interface {
+		fmt.Println(k, v)
+
+	}
+
+	print(data_interface)
+
+}
 
 type server struct{}
 
@@ -30,6 +52,7 @@ func (*server) DocumentTransfer(ctx context.Context, req *document.DocumentTrans
 		Response: "document recieved by server",
 	}
 	//Call anish function to set to db
+	buildData(data)
 
 	return res, nil
 }
