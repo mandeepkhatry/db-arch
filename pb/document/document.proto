@@ -1,0 +1,27 @@
+syntax = "proto3";
+package pb;
+
+option go_package = "document";
+
+message Document{
+    string Database = 1;
+    string Collection = 2;
+    string Namespace = 3;
+    bytes data = 4;
+}
+
+message DocumentTransferRequest{
+    Document request = 1;
+}
+
+message DocumentTransferResponse{
+    string response = 1;
+}
+
+service DocumentService{
+    rpc DocumentTransfer(DocumentTransferRequest) returns (DocumentTransferResponse){};
+}
+
+
+
+
