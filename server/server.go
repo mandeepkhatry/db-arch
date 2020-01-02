@@ -45,11 +45,13 @@ func (*server) DocumentTransfer(ctx context.Context, req *document.DocumentTrans
 	collection := req.GetRequest().GetCollection()
 	namespace := req.GetRequest().GetNamespace()
 	data := req.GetRequest().GetData()
+	indices := req.GetRequest().GetIndices()
 
 	fmt.Println("Document : ", database)
 	fmt.Println("Collection : ", collection)
 	fmt.Println("Namespace : ", namespace)
 	fmt.Println("Data : ", data)
+	fmt.Println("Indices : ", indices)
 
 	//Response to client
 	res := &document.DocumentTransferResponse{
@@ -62,6 +64,8 @@ func (*server) DocumentTransfer(ctx context.Context, req *document.DocumentTrans
 }
 
 func main() {
+
+	fmt.Println("-------------------Starting GRPC server-------------------")
 	//just in case server crashes, get detailed log
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
@@ -79,7 +83,6 @@ func main() {
 	reflection.Register(s)
 
 	err = s.Serve(lis)
-	fmt.Println("check")
 
 	if err != nil {
 		log.Fatalf("Failed to run server: %v", err)

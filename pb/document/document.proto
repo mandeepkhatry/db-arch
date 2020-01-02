@@ -4,10 +4,11 @@ package pb;
 option go_package = "document";
 
 message Document{
-    string Database = 1;
-    string Collection = 2;
-    string Namespace = 3;
+    string database = 1;
+    string collection = 2;
+    string namespace = 3;
     bytes data = 4;
+    repeated string indices = 5;
 }
 
 message DocumentTransferRequest{

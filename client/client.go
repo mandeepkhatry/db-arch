@@ -17,22 +17,24 @@ import (
 //Post Handler Function
 func postDocument(logger chan model.Document) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		fmt.Println("inside")
+		dataInterface := make(map[string]interface{})
 
-		data := make(map[string]interface{})
-
-		err := json.NewDecoder(r.Body).Decode(&data)
+		err := json.NewDecoder(r.Body).Decode(&dataInterface)
 
 		if err != nil {
 			panic(err)
 		}
+
+		fmt.Println("Check")
+		//Document object
 		d := model.Document{
-			Database:   data["database"].(string),
-			Collection: data["collection"].(string),
-			Namespace:  data["namespace"].(string),
-			Data:       data["data"],
+			Database:   dataInterface["database"].(string),
+			Collection: dataInterface["collection"].(string),
+			Namespace:  dataInterface["namespace"].(string),
+			Data:       dataInterface["data"],
+			Indices:    dataInterface["indices"].([]interface{}),
 		}
-		fmt.Println(d)
+		fmt.Println("Document recieved : ", d)
 		logger <- d
 	}
 }
@@ -79,6 +81,9 @@ func main() {
 
 	<-noExit
 
+	close(handlerChannel)
+	close(noExit)
+
 }
 
 //unary API call to send document to server.go
@@ -92,6 +97,12 @@ func sendDocument(c document.DocumentServiceClient, d model.Document) {
 		panic(err)
 	}
 
+	indices := make([]string, 0)
+
+	for _, v := range d.Indices {
+		indices = append(indices, v.(string))
+	}
+
 	//Document Transfer Request
 	req := &document.DocumentTransferRequest{
 		Request: &document.Document{
@@ -99,6 +110,7 @@ func sendDocument(c document.DocumentServiceClient, d model.Document) {
 			Collection: d.Collection,
 			Namespace:  d.Namespace,
 			Data:       data,
+			Indices:    indices,
 		},
 	}
 
