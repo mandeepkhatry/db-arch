@@ -12,7 +12,8 @@ import (
 	"google.golang.org/grpc/reflection"
 )
 
-//TODO
+//TODO buildData function for type assertion
+//Status : Incomplete
 
 func buildData(data []byte) {
 
@@ -33,8 +34,10 @@ func buildData(data []byte) {
 
 }
 
+//Server struct
 type server struct{}
 
+//DocumentTransfer function that recieves request from client and returns response
 func (*server) DocumentTransfer(ctx context.Context, req *document.DocumentTransferRequest) (*document.DocumentTransferResponse, error) {
 	fmt.Println("-----Got Document as Request-----")
 
@@ -48,11 +51,12 @@ func (*server) DocumentTransfer(ctx context.Context, req *document.DocumentTrans
 	fmt.Println("Namespace : ", namespace)
 	fmt.Println("Data : ", data)
 
+	//Response to client
 	res := &document.DocumentTransferResponse{
 		Response: "document recieved by server",
 	}
-	//Call anish function to set to db
-	buildData(data)
+
+	//Call function to set to db with data we have
 
 	return res, nil
 }
@@ -68,6 +72,7 @@ func main() {
 		log.Fatalf("Failed to listen: %v", err)
 	}
 
+	//New GRPC Server
 	s := grpc.NewServer()
 	document.RegisterDocumentServiceServer(s, &server{})
 

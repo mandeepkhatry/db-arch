@@ -2,5 +2,6 @@
 
 ## Command to generate .pb.go file
 ```
-protoc --go_out=. *.proto
+protoc pb/document/document.proto --go_out=plugins=grpc:.
+
 ```

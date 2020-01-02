@@ -14,6 +14,7 @@ import (
 	"google.golang.org/grpc"
 )
 
+//Post Handler Function
 func postDocument(logger chan model.Document) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("inside")
@@ -33,59 +34,56 @@ func postDocument(logger chan model.Document) func(http.ResponseWriter, *http.Re
 		}
 		fmt.Println(d)
 		logger <- d
-		fmt.Println("here")
 	}
 }
 
 func main() {
 
+	//handlerChannel represents a channel from which documents are passed via HTTP request
 	handlerChannel := make(chan model.Document, 10)
 
-	no_exit := make(chan string)
+	noExit := make(chan string)
 
-	fmt.Println("Checking")
-
-	fmt.Println("Starting GRPC client ...")
+	//Starting GRPC Client
+	fmt.Println("-------------------Starting GRPC client-------------------")
 	conn, err := grpc.Dial("localhost:50051", grpc.WithInsecure())
 
-	//register client
+	//Register client
 	c := document.NewDocumentServiceClient(conn)
 
 	if err != nil {
 		log.Fatalf("Client couldn't connect to server %v", err)
 		panic(err)
 	}
+
 	//close connection when program closes
 	defer conn.Close()
 
+	//Go routine to recieve documents from HTTP Request
 	go func() {
-		fmt.Println("Here")
 		for {
 			val, ok := <-handlerChannel
 			if ok {
-				fmt.Println("Here from channel : ", val)
-
 				sendDocument(c, val)
 			}
 		}
 
 	}()
 
+	//Starting server
 	router := mux.NewRouter()
 
-	fmt.Println("Starting client ...")
-
+	fmt.Println("-------------------Starting client-------------------")
 	router.HandleFunc("/documents", postDocument(handlerChannel)).Methods("POST")
-
 	http.ListenAndServe(":8000", router)
 
-	<-no_exit
+	<-noExit
 
 }
 
-//unary API
+//unary API call to send document to server.go
 func sendDocument(c document.DocumentServiceClient, d model.Document) {
-	fmt.Println("----------------Send Document-------------------")
+	fmt.Println("----------------Sending Document-------------------")
 
 	data, err := json.Marshal(d.Data)
 
@@ -94,6 +92,7 @@ func sendDocument(c document.DocumentServiceClient, d model.Document) {
 		panic(err)
 	}
 
+	//Document Transfer Request
 	req := &document.DocumentTransferRequest{
 		Request: &document.Document{
 			Database:   d.Database,
@@ -108,5 +107,6 @@ func sendDocument(c document.DocumentServiceClient, d model.Document) {
 		log.Fatalf("%v", err)
 	}
 
-	fmt.Println("RESPONSE----- %v", res)
+	fmt.Println("----------------RESPONSE----------------")
+	fmt.Println(res)
 }
