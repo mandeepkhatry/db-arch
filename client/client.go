@@ -6,11 +6,13 @@ import (
 	"db-arch/pb/document"
 	"encoding/json"
 	"net/http"
+	"os"
 
 	"fmt"
 	"log"
 
 	"github.com/gorilla/mux"
+	"github.com/joho/godotenv"
 	"google.golang.org/grpc"
 )
 
@@ -30,7 +32,7 @@ func postDocument(logger chan model.Document) func(http.ResponseWriter, *http.Re
 			Database:   dataInterface["database"].(string),
 			Collection: dataInterface["collection"].(string),
 			Namespace:  dataInterface["namespace"].(string),
-			Data:       dataInterface["data"],
+			Data:       dataInterface["data"].(map[string]interface{}),
 			Indices:    dataInterface["indices"].([]interface{}),
 		}
 		fmt.Println("Document recieved : ", d)
@@ -40,14 +42,23 @@ func postDocument(logger chan model.Document) func(http.ResponseWriter, *http.Re
 
 func main() {
 
+	//read your env file and load them into ENV for this process
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
+
+	//change grpc server target from .env file
+	grpcServerTarget := os.Getenv("GRPC_SERVER_TARGET")
+
 	//handlerChannel represents a channel from which documents are passed via HTTP request
-	handlerChannel := make(chan model.Document, 10)
+	handlerChannel := make(chan model.Document)
 
 	noExit := make(chan string)
 
 	//Starting GRPC Client
 	fmt.Println("-------------------Starting GRPC client-------------------")
-	conn, err := grpc.Dial("localhost:50051", grpc.WithInsecure())
+	conn, err := grpc.Dial(grpcServerTarget, grpc.WithInsecure())
 
 	//Register client
 	c := document.NewDocumentServiceClient(conn)
@@ -88,18 +99,21 @@ func main() {
 //unary API call to send document to server.go
 func sendDocument(c document.DocumentServiceClient, d model.Document) {
 	fmt.Println("----------------Sending Document-------------------")
-
-	data, err := json.Marshal(d.Data)
-
-	if err != nil {
-		log.Fatal(err)
-		panic(err)
-	}
-
 	indices := make([]string, 0)
 
 	for _, v := range d.Indices {
 		indices = append(indices, v.(string))
+	}
+
+	newData := make(map[string][]byte)
+
+	for k, v := range d.Data {
+
+		bytedata, err := json.Marshal(v)
+		if err != nil {
+			panic(err)
+		}
+		newData[k] = bytedata
 	}
 
 	//Document Transfer Request
@@ -108,7 +122,7 @@ func sendDocument(c document.DocumentServiceClient, d model.Document) {
 			Database:   d.Database,
 			Collection: d.Collection,
 			Namespace:  d.Namespace,
-			Data:       data,
+			Data:       newData,
 			Indices:    indices,
 		},
 	}

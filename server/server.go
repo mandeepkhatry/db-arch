@@ -7,10 +7,14 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"os"
 
+	"github.com/joho/godotenv"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 )
+
+//TODO Business Logic to map golang specific type
 
 //find if type of data is float64
 func findIfFLoat(typeOfData string) bool {
@@ -34,22 +38,24 @@ func checkIfInt(data float64) bool {
 }
 
 //returns type of data with keys as data field and value as type
-func findTypeOfData(data []byte) map[string]string {
+func findTypeOfData(data map[string][]byte) map[string]string {
 
-	var dataInterface map[string]interface{}
-	err := json.Unmarshal(data, &dataInterface)
-
-	if err != nil {
-		panic(err)
-	}
 	//typeOfData represents a map with key that represents data field and value that represents type of data
 	typeOfData := make(map[string]string)
+	var tempInterface interface{}
 
-	for k, v := range dataInterface {
-		temp := fmt.Sprintf("%T", v)
+	for k, v := range data {
+		fmt.Println("Byte : ", v)
+
+		err := json.Unmarshal(v, &tempInterface)
+		if err != nil {
+			panic(err)
+		}
+
+		temp := fmt.Sprintf("%T", tempInterface)
 		//Note : data from json even in form of integer is represented as float64 type
 		if findIfFLoat(temp) {
-			if checkIfInt(v.(float64)) {
+			if checkIfInt(tempInterface.(float64)) {
 				typeOfData[k] = "int"
 			} else {
 				typeOfData[k] = "float64"
@@ -117,12 +123,21 @@ func (*server) DocumentTransfer(ctx context.Context, req *document.DocumentTrans
 
 func main() {
 
+	//read your env file and load them into ENV for this process
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
+
+	//change grpc server target from .env file
+	grpcServerTarget := os.Getenv("GRPC_SERVER_TARGET")
+
 	fmt.Println("-------------------Starting GRPC server-------------------")
 	//just in case server crashes, get detailed log
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
 	//create a new listener
-	lis, err := net.Listen("tcp", "0.0.0.0:50051") //default port for gRPC is 50051
+	lis, err := net.Listen("tcp", grpcServerTarget)
 
 	if err != nil {
 		log.Fatalf("Failed to listen: %v", err)

@@ -7,7 +7,7 @@ message Document{
     string database = 1;
     string collection = 2;
     string namespace = 3;
-    bytes data = 4;
+    map<string, bytes> data = 4;
     repeated string indices = 5;
 }
 
