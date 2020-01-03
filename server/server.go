@@ -45,8 +45,6 @@ func findTypeOfData(data map[string][]byte) map[string]string {
 	var tempInterface interface{}
 
 	for k, v := range data {
-		fmt.Println("Byte : ", v)
-
 		err := json.Unmarshal(v, &tempInterface)
 		if err != nil {
 			panic(err)
@@ -113,7 +111,7 @@ func (*server) DocumentTransfer(ctx context.Context, req *document.DocumentTrans
 		Database		database			string
 		Colection		collection			string
 		Namespace		namespace			string
-		Data			data				[]byte
+		Data			data				map[string][]byte
 		Indices			indices				[]string
 		DataTyoe		dataType			map[string]string
 	*/
