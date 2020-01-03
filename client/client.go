@@ -25,7 +25,6 @@ func postDocument(logger chan model.Document) func(http.ResponseWriter, *http.Re
 			panic(err)
 		}
 
-		fmt.Println("Check")
 		//Document object
 		d := model.Document{
 			Database:   dataInterface["database"].(string),
