@@ -61,7 +61,16 @@ func getProcessID() []byte {
 
 //generateKey
 func generateKey(dbID []byte, collectionID []byte, namespaceID []byte, uniqueID []byte) []byte {
-	key := ""
-	key = string(dbID) + ":" + string(collectionID) + ":" + string(namespaceID) + ":" + string(uniqueID)
-	return []byte(key)
+	//key := ""
+	//key = string(dbID) + ":" + string(collectionID) + ":" + string(namespaceID) + ":" + string(uniqueID)
+	//return []byte(key)
+	key:=append(dbID,[]byte(":")...)
+	key=append(key,collectionID...)
+	key=append(key,[]byte(":")...)
+	key=append(key,namespaceID...)
+	key=append(key,[]byte(":")...)
+	key=append(key,uniqueID...)
+	return key
+
+
 }

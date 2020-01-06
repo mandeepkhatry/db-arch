@@ -79,11 +79,14 @@ func (s *StoreClient) PutBatch(args ...[]byte) error {
 //Get reads value for give key
 func (s *StoreClient) Get(key []byte) ([]byte, error) {
 	if len(key) == 0 {
-		return nil, errors.New("key can't be empty")
+		return []byte{}, errors.New("key can't be empty")
 	}
 	val, err := s.Client.Get(key)
 	if err != nil {
-		return nil, err
+		return []byte{}, err
+	}
+	if val==nil{
+		return []byte{},nil
 	}
 	return val, nil
 
@@ -92,12 +95,12 @@ func (s *StoreClient) Get(key []byte) ([]byte, error) {
 //GetBatch retrieves values for given pair of keys in batch
 func (s *StoreClient) GetBatch(keys [][]byte) ([][]byte, error) {
 	if len(keys) == 0 {
-		return nil, errors.New("keys are empty")
+		return [][]byte{}, errors.New("keys are empty")
 	}
 
 	val, err := s.Client.BatchGet(keys)
 	if err != nil {
-		return nil, err
+		return [][]byte{}, err
 	}
 	return val, nil
 }
@@ -133,7 +136,7 @@ func (s *StoreClient) Scan(startKey []byte, endKey []byte, limit int) ([][]byte,
 
 	keys, values, err := s.Client.Scan(startKey, endKey, limit)
 	if err != nil {
-		return nil, nil, err
+		return [][]byte{}, [][]byte{}, err
 	}
 	return keys, values, nil
 }
@@ -144,11 +147,11 @@ func (s *StoreClient) ReverseScan(startKey []byte, endKey []byte, limit int) ([]
 	keys := make([][]byte, 0)
 	values := make([][]byte, 0)
 	if len(startKey) == 0 {
-		return nil, nil, errors.New("Can't scan from last without knowing startKey")
+		return [][]byte{}, [][]byte{}, errors.New("Can't scan from last without knowing startKey")
 	}
 	keys, values, err := s.Client.ReverseScan(startKey, endKey, limit)
 	if err != nil {
-		return nil, nil, err
+		return [][]byte{}, [][]byte{}, err
 	}
 	return keys, values, nil
 }

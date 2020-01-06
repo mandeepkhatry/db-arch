@@ -118,16 +118,24 @@ func (*server) DocumentTransfer(ctx context.Context, req *document.DocumentTrans
 		Indices			indices				[]string
 		DataType		dataType			map[string]string
 	*/
-	
+
+	err:=store.InsertDocument(database,collection,namespace,data,indices)
+	if err!=nil{
+		return &document.DocumentTransferResponse{
+			Response:             "",
+		}, err
+	}
 
 	return res, nil
 }
 
 func main() {
+	//create a new TiKV store
 	err:=store.NewClient([]string{"127.0.0.1:2379"})
 	if err!=nil{
 		panic(err)
 	}
+
 	//read your env file and load them into ENV for this process
 	err = godotenv.Load()
 	if err != nil {
