@@ -9,10 +9,10 @@ import (
 	"net"
 	"os"
 
+	"db-arch/server/kvstore"
 	"github.com/joho/godotenv"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
-	"db-arch/server/kvstore"
 )
 
 var store kvstore.StoreClient
@@ -118,14 +118,13 @@ func (*server) DocumentTransfer(ctx context.Context, req *document.DocumentTrans
 		Indices			indices				[]string
 		DataType		dataType			map[string]string
 	*/
-	
 
 	return res, nil
 }
 
 func main() {
-	err:=store.NewClient([]string{"127.0.0.1:2379"})
-	if err!=nil{
+	err := store.NewClient([]string{"127.0.0.1:2379"})
+	if err != nil {
 		panic(err)
 	}
 	//read your env file and load them into ENV for this process
