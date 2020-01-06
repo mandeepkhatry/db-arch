@@ -11,6 +11,8 @@ const (
 	INT_RANGE = int(32768)
 )
 
+
+
 //TypeMarshal takes type of data and value interface as inputs and returns type specific data  byte
 func TypeMarshal(typeOfData string, valueInterface interface{}) []byte {
 	if typeOfData == "int" {
@@ -41,3 +43,16 @@ func TypeMarshal(typeOfData string, valueInterface interface{}) []byte {
 	fmt.Println("NEW TYPE OF DATA FOUND")
 	return []byte("New Type")
 }
+
+
+//func marshalInt() []byte,error
+
+//func marshalDouble() []byte,error
+
+//func marshalWords() []byte,error //Do this inside main logic
+
+//func marshalBool() []byte,error
+
+//func marshalDateTime() []byte,error
+
+//func marshalBlob() []byte,error

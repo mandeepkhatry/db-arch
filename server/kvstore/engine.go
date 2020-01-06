@@ -308,6 +308,7 @@ func (s *StoreClient) InsertDocument(
 	fmt.Println("db",dbID)
 	fmt.Println("collection ",collectionID)
 	fmt.Println("namespace ",namespaceID)
+	
 	//generate unique_id
 	uniqueID := s.GenerateUniqueID()
 	
@@ -323,6 +324,10 @@ func (s *StoreClient) InsertDocument(
 	if err != nil {
 		return err
 	}
+
+	//indexer
+	s.IndexDocument(data,indices)
+
 
 	return nil
 }
