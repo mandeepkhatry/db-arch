@@ -2,6 +2,7 @@ package kvstore
 
 import (
 	"encoding/binary"
+	"encoding/json"
 	"errors"
 )
 
@@ -24,45 +25,49 @@ Total key size for a document will be 20 bytes.
 */
 
 //GenerateDBIdentifier return db identifier value and increase identifier by 1
-func (s *StoreClient) GenerateDBIdentifier() (uint16, error) {
+func (s *StoreClient) GenerateDBIdentifier() ([]byte, error) {
 	val, err := s.Get([]byte(META_DBIDENTIFIER))
 	if err != nil {
-		return uint16(0), err
+		return []byte{}, err
 	}
 	if len(val) == 0 {
 		identifier := make([]byte, 2)
 		binary.LittleEndian.PutUint16(identifier, DBIDENTIFIER_INITIALCOUNT)
 		err := s.Put([]byte(META_DBIDENTIFIER), identifier)
 		if err != nil {
-			return uint16(0), err
+			return []byte{}, err
 		}
-		return DBIDENTIFIER_INITIALCOUNT, nil
+		return identifier, nil
 	} else {
 		identifier := binary.LittleEndian.Uint16(val)
 		binary.LittleEndian.PutUint16(val, uint16(identifier+1))
-		return identifier, nil
+		err := s.Put([]byte(META_DBIDENTIFIER), val)
+		if err != nil {
+			return []byte{}, err
+		}
+		return val, nil
 	}
 }
 
 //GetDBIdentifier returns identifier for given db
-func (s *StoreClient) GetDBIdentifier(dbname []byte) (uint16, error) {
+func (s *StoreClient) GetDBIdentifier(dbname []byte) ([]byte, error) {
 	if len(dbname) == 0 {
-		return uint16(0), errors.New("dbname empty")
+		return []byte{}, errors.New("dbname empty")
 	}
 	val, err := s.Get([]byte(META_DB + string(dbname)))
 	if err != nil {
-		return uint16(0), err
+		return []byte{}, err
 	}
 	//if len(val) is zero, generate a new identifier
 	if len(val) == 0 {
 		identifier, err := s.GenerateDBIdentifier()
 		if err != nil {
-			return uint16(0), err
+			return []byte{}, err
 		}
 		return identifier, nil
 	} else {
-		identifier := binary.LittleEndian.Uint16(val)
-		return identifier, nil
+		//identifier := binary.LittleEndian.Uint16(val)
+		return val, nil
 	}
 }
 
@@ -78,46 +83,50 @@ func (s *StoreClient) GetDBName(dbIdentifier []byte) (string, error) {
 	return string(val), nil
 }
 
-//GenerateCollectionIdentifier generate collection identifier and increses identifier by 1
-func (s *StoreClient) GenerateCollectionIdentifier() (uint32, error) {
+//GenerateCollectionIdentifier generate collection identifier and increases identifier by 1
+func (s *StoreClient) GenerateCollectionIdentifier() ([]byte, error) {
 	val, err := s.Get([]byte(META_COLLECTIONIDENTIFIER))
 	if err != nil {
-		return uint32(0), err
+		return []byte{}, err
 	}
 	if len(val) == 0 {
 		identifier := make([]byte, 4)
 		binary.LittleEndian.PutUint32(identifier, COLLECTIONIDENTIFIER_INITIALCOUNT)
 		err := s.Put([]byte(META_COLLECTIONIDENTIFIER), identifier)
 		if err != nil {
-			return uint32(0), err
+			return []byte{}, err
 		}
-		return COLLECTIONIDENTIFIER_INITIALCOUNT, nil
+		return identifier, nil
 	} else {
 		identifier := binary.LittleEndian.Uint32(val)
 		binary.LittleEndian.PutUint32(val, uint32(identifier+1))
-		return identifier, nil
+		err := s.Put([]byte(META_COLLECTIONIDENTIFIER), val)
+		if err != nil {
+			return []byte{}, err
+		}
+		return val, nil
 	}
 }
 
 //GetCollectionIdentifier returns identifier for given collection
-func (s *StoreClient) GetCollectionIdentifier(collection []byte) (uint32, error) {
+func (s *StoreClient) GetCollectionIdentifier(collection []byte) ([]byte, error) {
 	if len(collection) == 0 {
-		return uint32(0), errors.New("collection name empty")
+		return []byte{}, errors.New("collection name empty")
 	}
 	val, err := s.Get([]byte(META_COLLECTION + string(collection)))
 	if err != nil {
-		return uint32(0), err
+		return []byte{}, err
 	}
 	//if len(val) is zero, generate a new identifier
 	if len(val) == 0 {
 		identifier, err := s.GenerateCollectionIdentifier()
 		if err != nil {
-			return uint32(0), err
+			return []byte{}, err
 		}
 		return identifier, nil
 	} else {
-		identifier := binary.LittleEndian.Uint32(val)
-		return identifier, nil
+		//identifier := binary.LittleEndian.Uint32(val)
+		return val, nil
 	}
 }
 
@@ -134,10 +143,10 @@ func (s *StoreClient) GetCollectionName(collectionIdentifier []byte) (string, er
 }
 
 //GenerateNamespaceIdentifier generates namespace identifier value and increases identifier by 1
-func (s *StoreClient) GenerateNamespaceIdentifier() (uint32, error) {
+func (s *StoreClient) GenerateNamespaceIdentifier() ([]byte, error) {
 	val, err := s.Get([]byte(META_NAMESPACEIDENTIFIER))
 	if err != nil {
-		return uint32(0), err
+		return []byte{}, err
 	}
 	//if there is no namespace id, generate a new one
 	//TODO: move this logic to separate init file for performance
@@ -146,35 +155,39 @@ func (s *StoreClient) GenerateNamespaceIdentifier() (uint32, error) {
 		binary.LittleEndian.PutUint32(identifier, NAMESPACEIDENTIFIER_INITIALCOUNT)
 		err := s.Put([]byte(META_NAMESPACEIDENTIFIER), identifier)
 		if err != nil {
-			return uint32(0), err
+			return []byte{}, err
 		}
-		return NAMESPACEIDENTIFIER_INITIALCOUNT, nil
+		return identifier, nil
 	} else {
 		identifier := binary.LittleEndian.Uint32(val)
 		binary.LittleEndian.PutUint32(val, uint32(identifier+1))
-		return identifier, nil
+		err := s.Put([]byte(META_NAMESPACEIDENTIFIER), val)
+		if err != nil {
+			return []byte{}, err
+		}
+		return val, nil
 	}
 }
 
 //GetNamespaceIdentifier returns identifier for given namespace
-func (s *StoreClient) GetNamespaceIdentifier(namespace []byte) (uint32, error) {
+func (s *StoreClient) GetNamespaceIdentifier(namespace []byte) ([]byte, error) {
 	if len(namespace) == 0 {
-		return uint32(0), errors.New("collection name empty")
+		return []byte{}, errors.New("collection name empty")
 	}
 	val, err := s.Get([]byte(META_NAMESPACE + string(namespace)))
 	if err != nil {
-		return uint32(0), err
+		return []byte{}, err
 	}
 	//if len(val) is zero, generate a new identifier
 	if len(val) == 0 {
 		identifier, err := s.GenerateNamespaceIdentifier()
 		if err != nil {
-			return uint32(0), err
+			return []byte{}, err
 		}
 		return identifier, nil
 	} else { //else send the value read from db
-		identifier := binary.LittleEndian.Uint32(val)
-		return identifier, nil
+		//identifier := binary.LittleEndian.Uint32(val)
+		return val, nil
 	}
 }
 
@@ -205,4 +218,60 @@ func (s *StoreClient) GenerateUniqueID() []byte {
 	uniqueID = append(uniqueID, counter...)
 
 	return uniqueID
+}
+
+//GetIdentifiers returns database, collection and namespace identifiers for respective names given
+func (s *StoreClient) GetIdentifiers(database string, collection string,
+	namespace string) ([]byte, []byte, []byte, error) {
+	dbID, err := s.GetDBIdentifier([]byte(database))
+	if err != nil {
+		return []byte{}, []byte{}, []byte{}, err
+	}
+
+	collectionID, err := s.GetCollectionIdentifier([]byte(collection))
+	if err != nil {
+		return []byte{}, []byte{}, []byte{}, err
+	}
+
+	namespaceID, err := s.GetNamespaceIdentifier([]byte(namespace))
+	if err != nil {
+		return []byte{}, []byte{}, []byte{}, err
+	}
+
+	return dbID, collectionID, namespaceID, nil
+}
+
+//InsertDocument retrieves identifiers and inserts document to database
+func (s *StoreClient) InsertDocument(
+	database string, collection string, namespace string,
+	data map[string]interface{}, indices []string) error {
+
+	if len(database) == 0 || len(collection) == 0 || len(namespace) == 0 {
+		return errors.New("names can't be empty")
+	}
+
+	//get database, collection,namespace identifiers
+	dbID, collectionID, namespaceID, err := s.GetIdentifiers(database, collection, namespace)
+	if err != nil {
+		return err
+	}
+
+	//generate unique_id
+	uniqueID := s.GenerateUniqueID()
+	
+	//generate key
+	key := generateKey(dbID, collectionID, namespaceID, uniqueID)
+
+	dataInBytes, err := json.Marshal(data)
+	if err != nil {
+		return err
+	}
+
+	//insert into db
+	err = s.Put(key, dataInBytes)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

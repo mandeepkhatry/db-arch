@@ -10,7 +10,7 @@ import (
 )
 
 /*
-	All utiity functions are defined here!
+	All utility functions are defined here!
 */
 
 //getMACAddress return 3 byte MAC address of current machine
@@ -57,4 +57,11 @@ func getProcessID() []byte {
 	processIDInBytes := make([]byte, 2)
 	binary.LittleEndian.PutUint16(processIDInBytes, uint16(os.Getpid()))
 	return processIDInBytes
+}
+
+//generateKey
+func generateKey(dbID []byte, collectionID []byte, namespaceID []byte, uniqueID []byte) []byte {
+	key := ""
+	key = string(dbID) + ":" + string(collectionID) + ":" + string(namespaceID) + ":" + string(uniqueID)
+	return []byte(key)
 }

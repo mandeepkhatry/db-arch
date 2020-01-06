@@ -12,7 +12,10 @@ import (
 	"github.com/joho/godotenv"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
+	"db-arch/server/kvstore"
 )
+
+var store kvstore.StoreClient
 
 //TODO Business Logic to map golang specific type
 
@@ -109,20 +112,24 @@ func (*server) DocumentTransfer(ctx context.Context, req *document.DocumentTrans
 	/*
 		Data Field		Variable used		Type
 		Database		database			string
-		Colection		collection			string
+		Collection		collection			string
 		Namespace		namespace			string
 		Data			data				map[string][]byte
 		Indices			indices				[]string
-		DataTyoe		dataType			map[string]string
+		DataType		dataType			map[string]string
 	*/
+	
 
 	return res, nil
 }
 
 func main() {
-
+	err:=store.NewClient([]string{"127.0.0.1:2379"})
+	if err!=nil{
+		panic(err)
+	}
 	//read your env file and load them into ENV for this process
-	err := godotenv.Load()
+	err = godotenv.Load()
 	if err != nil {
 		log.Fatal("Error loading .env file")
 	}
