@@ -9,10 +9,11 @@ import (
 	"net"
 	"os"
 
+	"db-arch/server/kvstore"
+	"db-arch/server/marshal"
 	"github.com/joho/godotenv"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
-	"db-arch/server/kvstore"
 )
 
 var store kvstore.StoreClient
@@ -41,11 +42,13 @@ func checkIfInt(data float64) bool {
 }
 
 //returns type of data with keys as data field and value as type
-func findTypeOfData(data map[string][]byte) map[string]string {
+func findTypeOfData(data map[string][]byte) (map[string]string, map[string][]byte) {
 
 	//typeOfData represents a map with key that represents data field and value that represents type of data
 	typeOfData := make(map[string]string)
 	var tempInterface interface{}
+
+	new_data := make(map[string][]byte)
 
 	for k, v := range data {
 		err := json.Unmarshal(v, &tempInterface)
@@ -53,20 +56,23 @@ func findTypeOfData(data map[string][]byte) map[string]string {
 			panic(err)
 		}
 
-		temp := fmt.Sprintf("%T", tempInterface)
+		dataType := fmt.Sprintf("%T", tempInterface)
 		//Note : data from json even in form of integer is represented as float64 type
-		if findIfFLoat(temp) {
+		if findIfFLoat(dataType) {
 			if checkIfInt(tempInterface.(float64)) {
 				typeOfData[k] = "int"
+				new_data[k] = marshal.TypeMarshal("int", tempInterface)
 			} else {
 				typeOfData[k] = "float64"
+				new_data[k] = marshal.TypeMarshal("float64", tempInterface)
 			}
 		} else {
-			typeOfData[k] = temp
+			new_data[k] = marshal.TypeMarshal(dataType, tempInterface)
+			typeOfData[k] = dataType
 
 		}
 	}
-	return typeOfData
+	return typeOfData, new_data
 }
 
 //Server struct
@@ -95,14 +101,15 @@ func (*server) DocumentTransfer(ctx context.Context, req *document.DocumentTrans
 	fmt.Println("Database : ", database)
 	fmt.Println("Collection : ", collection)
 	fmt.Println("Namespace : ", namespace)
-	fmt.Println("Data : ", data)
+	fmt.Println("Data (DATBASE PURPOSE): ", data)
 	fmt.Println("Indices : ", indices)
 
 	//type of data with keys as data field and value as type
 	//eg. map[name:string age:int]
-	dataType := findTypeOfData(data)
+	dataType, typeSpecificData := findTypeOfData(data)
 	fmt.Println("Data Type :\n", dataType)
 
+	fmt.Println("Type specific data in bytes (INDEXING PURPOSE) :\n", typeSpecificData)
 	//Response to client
 	res := &document.DocumentTransferResponse{
 		Response: "document recieved by server",
@@ -110,13 +117,14 @@ func (*server) DocumentTransfer(ctx context.Context, req *document.DocumentTrans
 
 	//variables that needs to be fed to database specific functions
 	/*
-		Data Field		Variable used		Type
-		Database		database			string
-		Collection		collection			string
-		Namespace		namespace			string
-		Data			data				map[string][]byte
-		Indices			indices				[]string
-		DataType		dataType			map[string]string
+		Data Field			Variable used		Type
+		Database			database			string
+		Collection			collection			string
+		Namespace			namespace			string
+		Data				data				map[string][]byte
+		Indices				indices				[]string
+		DataType			dataType			map[string]string
+		Type Specific data	typeSpecificData	map[string][]byte  <- INDEXING PURPSE
 	*/
 
 	err:=store.InsertDocument(database,collection,namespace,data,indices)
