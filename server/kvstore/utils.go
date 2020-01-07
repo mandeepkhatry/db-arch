@@ -18,6 +18,23 @@ import (
 	All utility functions are defined here!
 */
 
+//getApplicationSpecificType return application specific data type
+func getApplicationSpecificType(typeOfData string, valueInterface interface{}) string {
+	if typeOfData == "string" {
+		//TODO seperate for word and words
+		return "word"
+	} else if typeOfData == "float64" || typeOfData == "float32" {
+		return "double"
+	} else if typeOfData == "bool" {
+		return "bool"
+	} else if typeOfData == "time.Time" {
+		return "datatime"
+	}
+
+	//New type
+	return "new type"
+}
+
 //getMACAddress return 3 byte MAC address of current machine
 func getMACAddress() []byte {
 	interfaces, err := net.Interfaces()
@@ -131,36 +148,49 @@ func checkIfInt(data float64) bool {
 	return false
 }
 
-//FindTypeOfData returns type of data with keys as data field and value as type
+//FindTypeOfData returns type of data with keys as data field and value as type and type specific data bytes
 func findTypeOfData(data map[string][]byte) (map[string]string, map[string][]byte) {
 
 	//typeOfData represents a map with key that represents data field and value that represents type of data
 	typeOfData := make(map[string]string)
-	var tempInterface interface{}
+	var valueInterface interface{}
 
-	new_data := make(map[string][]byte)
+	newData := make(map[string][]byte)
 
 	for k, v := range data {
-		err := json.Unmarshal(v, &tempInterface)
+		err := json.Unmarshal(v, &valueInterface)
 		if err != nil {
 			panic(err)
 		}
 
-		dataType := fmt.Sprintf("%T", tempInterface)
+		dataType := fmt.Sprintf("%T", valueInterface)
 		//Note : data from json even in form of integer is represented as float64 type
 		if findIfFLoat(dataType) {
-			if checkIfInt(tempInterface.(float64)) {
-				typeOfData[k] = "int"
-				new_data[k] = marshal.TypeMarshal("int", tempInterface)
+			if checkIfInt(valueInterface.(float64)) {
+				typeOfData[k] = getApplicationSpecificType("int", valueInterface)
+				newData[k] = marshal.TypeMarshal("int", valueInterface)
 			} else {
-				typeOfData[k] = "float64"
-				new_data[k] = marshal.TypeMarshal("float64", tempInterface)
+				typeOfData[k] = getApplicationSpecificType("infloat64t", valueInterface)
+				newData[k] = marshal.TypeMarshal("float", valueInterface)
+			}
+
+		} else if dataType == "string" {
+			time, _ := time.Parse(time.RFC3339, valueInterface.(string))
+
+			if time.String() == "0001-01-01 00:00:00 +0000 UTC" {
+				stringType := getApplicationSpecificType(dataType, valueInterface)
+				typeOfData[k] = stringType
+				newData[k] = marshal.TypeMarshal(stringType, valueInterface)
+			} else {
+				timeType := getApplicationSpecificType(fmt.Sprintf("%T", time), valueInterface)
+				typeOfData[k] = timeType
+				newData[k] = marshal.TypeMarshal(timeType, valueInterface)
 			}
 		} else {
-			new_data[k] = marshal.TypeMarshal(dataType, tempInterface)
-			typeOfData[k] = dataType
+			newData[k] = marshal.TypeMarshal(dataType, valueInterface)
+			typeOfData[k] = getApplicationSpecificType(dataType, valueInterface)
 
 		}
 	}
-	return typeOfData, new_data
+	return typeOfData, newData
 }
