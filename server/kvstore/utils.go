@@ -5,9 +5,12 @@ import (
 	"db-arch/server/kvstore/marshal"
 	"encoding/binary"
 	"encoding/json"
+	"fmt"
 	"math/rand"
 	"net"
 	"os"
+	"strconv"
+	"strings"
 	"time"
 )
 
@@ -29,7 +32,24 @@ func getMACAddress() []byte {
 			break
 		}
 	}
-	return []byte(addr)
+
+	//replace MAC address characters with number
+	addr = strings.Replace(addr, "A", "2", -1)
+	addr = strings.Replace(addr, "B", "21", -1)
+	addr = strings.Replace(addr, "C", "3", -1)
+	addr = strings.Replace(addr, "D", "31", -1)
+	addr = strings.Replace(addr, "E", "4", -1)
+	addr = strings.Replace(addr, "F", "41", -1)
+	addr = strings.Replace(addr, ":", "", -1)
+
+	addrInt, err := strconv.Atoi(addr)
+	if err != nil {
+		panic(err)
+	}
+
+	addrInBytes := make([]byte, 4)
+	binary.LittleEndian.PutUint32(addrInBytes, uint32(addrInt))
+	return addrInBytes
 }
 
 //getUnixTimeStamp returns 4 byte UNIX timestamp
@@ -63,17 +83,31 @@ func getProcessID() []byte {
 
 //TODO: make this func generic
 //generateKey
-func generateKey(dbID []byte, collectionID []byte, namespaceID []byte, uniqueID []byte) []byte {
-	//key := ""
-	//key = string(dbID) + ":" + string(collectionID) + ":" + string(namespaceID) + ":" + string(uniqueID)
-	//return []byte(key)
-	key:=append(dbID,[]byte(":")...)
-	key=append(key,collectionID...)
-	key=append(key,[]byte(":")...)
-	key=append(key,namespaceID...)
-	key=append(key,[]byte(":")...)
-	key=append(key,uniqueID...)
-	return key
+//func generateKey(dbID []byte, collectionID []byte, namespaceID []byte, uniqueID []byte) []byte {
+//	//key := ""
+//	//key = string(dbID) + ":" + string(collectionID) + ":" + string(namespaceID) + ":" + string(uniqueID)
+//	//return []byte(key)
+//	key:=append(dbID,[]byte(":")...)
+//	key=append(key,collectionID...)
+//	key=append(key,[]byte(":")...)
+//	key=append(key,namespaceID...)
+//	key=append(key,[]byte(":")...)
+//	key=append(key,uniqueID...)
+//	return key
+//}
+
+func generateKey(args ...[]byte) []byte {
+	key := ""
+	length := len(args)
+	for i = 0; i < length; i++ {
+		key += string(args[i])
+		if i < (length - 1) {
+			key += string(":")
+		} else {
+			break
+		}
+	}
+	return []byte(key)
 }
 
 //findIfFloat finds if type of data is float64
@@ -96,7 +130,6 @@ func checkIfInt(data float64) bool {
 
 	return false
 }
-
 
 //FindTypeOfData returns type of data with keys as data field and value as type
 func findTypeOfData(data map[string][]byte) (map[string]string, map[string][]byte) {

@@ -32,8 +32,7 @@ func (s *StoreClient) GenerateDBIdentifier(dbname []byte) ([]byte, error) {
 		return []byte{}, err
 	}
 
-
-	if len(val)==0 {
+	if len(val) == 0 {
 		identifier := make([]byte, 2)
 
 		binary.LittleEndian.PutUint16(identifier, DBIDENTIFIER_INITIALCOUNT)
@@ -61,28 +60,28 @@ func (s *StoreClient) GetDBIdentifier(dbname []byte) ([]byte, error) {
 		return []byte{}, errors.New("dbname empty")
 	}
 	val, err := s.Get([]byte(META_DB + string(dbname)))
-	fmt.Println("[[GetDBIdentifier]] value: ",string(val))
+	fmt.Println("[[GetDBIdentifier]] value: ", string(val))
 	if err != nil {
 		return []byte{}, err
 	}
 	//if len(val) is zero, generate a new identifier
 	if len(val) == 0 {
 		identifier, err := s.GenerateDBIdentifier(dbname)
-		fmt.Println("[[GetDBIdentifier]] identifier",string(identifier))
+		fmt.Println("[[GetDBIdentifier]] identifier", string(identifier))
 		if err != nil {
 			return []byte{}, err
 		}
 
 		//insert meta:db:dname = identifier
-		err=s.Put([]byte(META_DB + string(dbname)),identifier)
-		if err!=nil{
-			return []byte{},err
+		err = s.Put([]byte(META_DB+string(dbname)), identifier)
+		if err != nil {
+			return []byte{}, err
 		}
 
 		//insert meta:dbid:id=name
-		err=s.Put(append([]byte(META_DBID),identifier...),dbname)
-		if err!=nil{
-			return []byte{},err
+		err = s.Put(append([]byte(META_DBID), identifier...), dbname)
+		if err != nil {
+			return []byte{}, err
 		}
 
 		return identifier, nil
@@ -101,8 +100,8 @@ func (s *StoreClient) GetDBName(dbIdentifier []byte) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	if val==nil{
-		return "",nil
+	if val == nil {
+		return "", nil
 	}
 	return string(val), nil
 }
@@ -149,15 +148,15 @@ func (s *StoreClient) GetCollectionIdentifier(collection []byte) ([]byte, error)
 		}
 
 		//insert meta:collection:collectionname = identifier
-		err=s.Put([]byte(META_COLLECTION + string(collection)),identifier)
-		if err!=nil{
-			return []byte{},err
+		err = s.Put([]byte(META_COLLECTION+string(collection)), identifier)
+		if err != nil {
+			return []byte{}, err
 		}
 
 		//insert meta:collectionid:id=name
-		err=s.Put(append([]byte(META_COLLECTIONID),identifier...),collection)
-		if err!=nil{
-			return []byte{},err
+		err = s.Put(append([]byte(META_COLLECTIONID), identifier...), collection)
+		if err != nil {
+			return []byte{}, err
 		}
 
 		return identifier, nil
@@ -223,15 +222,15 @@ func (s *StoreClient) GetNamespaceIdentifier(namespace []byte) ([]byte, error) {
 		}
 
 		//insert meta:namespace:namespace = identifier
-		err=s.Put([]byte(META_NAMESPACE + string(namespace)),identifier)
-		if err!=nil{
-			return []byte{},err
+		err = s.Put([]byte(META_NAMESPACE+string(namespace)), identifier)
+		if err != nil {
+			return []byte{}, err
 		}
 
 		//insert meta:namespaceid:id=name
-		err=s.Put(append([]byte(META_NAMESPACEID),identifier...),namespace)
-		if err!=nil{
-			return []byte{},err
+		err = s.Put(append([]byte(META_NAMESPACEID), identifier...), namespace)
+		if err != nil {
+			return []byte{}, err
 		}
 
 		return identifier, nil
@@ -253,21 +252,44 @@ func (s *StoreClient) GetNamespaceName(namespaceIdentifier []byte) (string, erro
 	return string(val), err
 }
 
-//GenerateUniqueID generates a 13byte unique_id which composes of
-//4 byte UNIX timestamp
-//3-byte MAC Addr
-//2 byte processID
-//4 byte RandomCounter Value
-func (s *StoreClient) GenerateUniqueID() []byte {
-	unixTimeStamp := getUnixTimestamp() //returns 4 byte UNIX timestamp
-	macAddr := getMACAddress()          //returns 3 byte MAC Address
-	processID := getProcessID()         //returns 2 byte ProcessID
-	counter := generateRandomCount()    //returns 4 byte RANDOM count
-	uniqueID := append(unixTimeStamp, macAddr...)
-	uniqueID = append(uniqueID, processID...)
-	uniqueID = append(uniqueID, counter...)
+//GenerateUniqueID generates a 4 byte unique_id
+func (s *StoreClient) GenerateUniqueID(dbID []byte, collectionID []byte, namespaceID []byte) ([]byte, error) {
+	//unixTimeStamp := getUnixTimestamp() //returns 4 byte UNIX timestamp
+	//macAddr := getMACAddress()          //returns 3 byte MAC Address
+	//processID := getProcessID()         //returns 2 byte ProcessID
+	//counter := generateRandomCount()    //returns 4 byte RANDOM count
+	//uniqueID := append(unixTimeStamp, macAddr...)
+	//uniqueID = append(uniqueID, processID...)
+	//uniqueID = append(uniqueID, counter...)
 
-	return uniqueID
+	//key format: _uniqueid:dbid:colid:namespaceid=idcounter
+	idKey := []byte(UNIQUE_ID + string(dbID) + ":" + string(collectionID) + ":" + string(namespaceID))
+	idCounterInBytes, err := s.Get(idKey)
+	if err != nil {
+		return []byte{}, err
+	}
+	//if there is no id counter, generate a new one
+	if len(idCounterInBytes) == 0 {
+		//create 4 byte identifier for each document
+		counterByte := make([]byte, 4)
+		binary.LittleEndian.PutUint32(counterByte, UNIQUE_ID_INITIALCOUNT)
+		err := s.Put(idKey, counterByte)
+		if err != nil {
+			return []byte{}, err
+		}
+		return counterByte, nil
+	} else {
+		currentCount := binary.LittleEndian.Uint32(idCounterInBytes)
+		counterByte := make([]byte, 4)
+		//increase count by 1 and write to db
+		binary.LittleEndian.PutUint32(counterByte, (currentCount + 1))
+		//insert
+		err := s.Put(idKey, counterByte)
+		if err != nil {
+			return []byte{}, err
+		}
+		return counterByte, nil
+	}
 }
 
 //GetIdentifiers returns database, collection and namespace identifiers for respective names given
@@ -305,13 +327,15 @@ func (s *StoreClient) InsertDocument(
 	if err != nil {
 		return err
 	}
-	fmt.Println("db",dbID)
-	fmt.Println("collection ",collectionID)
-	fmt.Println("namespace ",namespaceID)
-	
+	fmt.Println("db", dbID)
+	fmt.Println("collection ", collectionID)
+	fmt.Println("namespace ", namespaceID)
+
 	//generate unique_id
-	uniqueID := s.GenerateUniqueID()
-	
+	uniqueID, err := s.GenerateUniqueID(dbID, collectionID, namespaceID)
+	if err != nil {
+		return err
+	}
 	//generate key
 	key := generateKey(dbID, collectionID, namespaceID, uniqueID)
 	dataInBytes, err := json.Marshal(data)
@@ -326,8 +350,9 @@ func (s *StoreClient) InsertDocument(
 	}
 
 	//indexer
-	s.IndexDocument(data,indices)
-
-
+	err = s.IndexDocument(dbID, collectionID, namespaceID, uniqueID, data, indices)
+	if err != nil {
+		return err
+	}
 	return nil
 }
