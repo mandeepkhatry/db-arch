@@ -28,7 +28,9 @@ func getApplicationSpecificType(typeOfData string, valueInterface interface{}) s
 	} else if typeOfData == "bool" {
 		return "bool"
 	} else if typeOfData == "time.Time" {
-		return "datatime"
+		return "datetime"
+	} else if typeOfData == "int" {
+		return "int"
 	}
 
 	//New type
@@ -165,12 +167,12 @@ func findTypeOfData(data map[string][]byte) (map[string]string, map[string][]byt
 
 		dataType := fmt.Sprintf("%T", valueInterface)
 		//Note : data from json even in form of integer is represented as float64 type
-		if findIfFLoat(dataType) {
+		if findIfFLoat(dataType) == true {
 			if checkIfInt(valueInterface.(float64)) {
 				typeOfData[k] = getApplicationSpecificType("int", valueInterface)
 				newData[k] = marshal.TypeMarshal("int", valueInterface)
 			} else {
-				typeOfData[k] = getApplicationSpecificType("float", valueInterface)
+				typeOfData[k] = getApplicationSpecificType("float64", valueInterface)
 				newData[k] = marshal.TypeMarshal("float", valueInterface)
 			}
 
