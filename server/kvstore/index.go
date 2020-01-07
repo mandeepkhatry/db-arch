@@ -2,6 +2,7 @@ package kvstore
 
 import (
 	"encoding/binary"
+	"fmt"
 
 	"github.com/RoaringBitmap/roaring"
 )
@@ -33,53 +34,44 @@ func (s *StoreClient) IndexDocument(dbID []byte, collectionID []byte,
 		map['weight']=sorted double []byte
 	*/
 
-	batchKV := make([]byte, 0)
+	//batchKV := make([]byte, 0)
 
 	//convert uniqueID into uint32 and change into roaring bitmap
 	num := binary.LittleEndian.Uint32(uniqueID)
 	rb := roaring.BitmapOf(num)
 	marshaledRB, err := rb.MarshalBinary()
+	fmt.Println("marshalled binary: ", marshaledRB)
 	if err != nil {
 		return err
 	}
 
 	for i := 0; i < len(indices); i++ {
 		fieldToIndex := indices[i]
-		if typeOfData[fieldToIndex] == "words" {
-			//TODO: implementation for strings yet to be done
-			//val := newData[fieldToIndex]
-			//splitWords := strings.Split(string(val), " ")
-			//for k, v := range splitWords {
-			//	indexKey := generateKey([]byte(INDEX_KEY), dbID, collectionID, namespaceID,
-			//		[]byte(fieldToIndex), []byte(typeOfData["fieldToIndex"]), []byte(v))
-			//	s.Get()
-			//}
-		} else {
-			fieldValue := newData[fieldToIndex]
+		//TODO: tokenize words and create index for them too
 
-			//generate index key
-			indexKey := generateKey([]byte(INDEX_KEY), dbID, collectionID, namespaceID,
-				[]byte(fieldToIndex), []byte(typeOfData[fieldToIndex]), []byte(fieldValue))
+		fieldValue := newData[fieldToIndex]
 
-			//get value for that index key
-			val, err := s.Get(indexKey)
-			if err != nil {
-				return err
-			}
+		//generate index key
+		indexKey := generateKey([]byte(INDEX_KEY), dbID, collectionID, namespaceID,
+			[]byte(fieldToIndex), []byte(typeOfData[fieldToIndex]), fieldValue)
 
-			val = append(val, marshaledRB...)
-			//add to batch KV pair
-			batchKV = append(batchKV, indexKey...)
-			batchKV = append(batchKV, val...)
+		//get value for that index key
+		val, err := s.Get(indexKey)
+		if err != nil {
+			return err
+		}
 
+		val = append(val, marshaledRB...)
+		//add to batch KV pair
+		//batchKV = append(batchKV, indexKey...)
+		//batchKV = append(batchKV, val...)
+		//write in batch
+		err = s.PutBatch(indexKey, val)
+		if err != nil {
+			return err
 		}
 
 	}
 
-	//write in batch
-	err = s.PutBatch(batchKV)
-	if err != nil {
-		return err
-	}
 	return nil
 }

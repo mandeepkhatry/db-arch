@@ -116,7 +116,7 @@ func getProcessID() []byte {
 func generateKey(args ...[]byte) []byte {
 	key := ""
 	length := len(args)
-	for i = 0; i < length; i++ {
+	for i := 0; i < length; i++ {
 		key += string(args[i])
 		if i < (length - 1) {
 			key += string(":")
@@ -170,7 +170,7 @@ func findTypeOfData(data map[string][]byte) (map[string]string, map[string][]byt
 				typeOfData[k] = getApplicationSpecificType("int", valueInterface)
 				newData[k] = marshal.TypeMarshal("int", valueInterface)
 			} else {
-				typeOfData[k] = getApplicationSpecificType("infloat64t", valueInterface)
+				typeOfData[k] = getApplicationSpecificType("float", valueInterface)
 				newData[k] = marshal.TypeMarshal("float", valueInterface)
 			}
 
