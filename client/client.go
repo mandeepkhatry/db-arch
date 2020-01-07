@@ -4,6 +4,7 @@ import (
 	"context"
 	"db-arch/model"
 	"db-arch/pb/document"
+	"db-arch/pb/query"
 	"encoding/json"
 	"net/http"
 	"os"
@@ -40,6 +41,28 @@ func postDocument(c document.DocumentServiceClient) func(http.ResponseWriter, *h
 	}
 }
 
+//Query Handler Function
+func queryDocument(c query.QueryServiceClient) func(http.ResponseWriter, *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		dataInterface := make(map[string]interface{})
+
+		err := json.NewDecoder(r.Body).Decode(&dataInterface)
+
+		if err != nil {
+			panic(err)
+		}
+
+		//Document object
+		d := model.Query{
+			Database:   dataInterface["database"].(string),
+			Collection: dataInterface["collection"].(string),
+			Namespace:  dataInterface["namespace"].(string),
+			Querydata:  dataInterface["data"].(map[string]interface{}),
+		}
+		fmt.Println("Document recieved : ", d)
+		sendQuery(c, d)
+	}
+}
 func main() {
 	//read your env file and load them into ENV for this process
 	err := godotenv.Load()
@@ -55,7 +78,9 @@ func main() {
 	conn, err := grpc.Dial(grpcServerTarget, grpc.WithInsecure())
 
 	//Register client
-	c := document.NewDocumentServiceClient(conn)
+	c1 := document.NewDocumentServiceClient(conn)
+
+	c2 := query.NewQueryServiceClient(conn)
 
 	if err != nil {
 		log.Fatalf("Client couldn't connect to server %v", err)
@@ -69,7 +94,8 @@ func main() {
 	router := mux.NewRouter()
 
 	fmt.Println("-------------------Starting client-------------------")
-	router.HandleFunc("/documents", postDocument(c)).Methods("POST")
+	router.HandleFunc("/documents", postDocument(c1)).Methods("POST")
+	router.HandleFunc("/query", queryDocument(c2)).Methods("POST")
 	http.ListenAndServe(":8000", router)
 
 }
@@ -111,5 +137,38 @@ func sendDocument(c document.DocumentServiceClient, d model.Document) {
 	}
 
 	fmt.Println("----------------RESPONSE----------------")
+	fmt.Println(res)
+}
+
+//unary API call to send query to server.go
+func sendQuery(c query.QueryServiceClient, d model.Query) {
+	fmt.Println("----------------Sending Query-------------------")
+
+	newData := make(map[string][]byte)
+
+	for k, v := range d.Querydata {
+
+		bytedata, err := json.Marshal(v)
+		if err != nil {
+			panic(err)
+		}
+		newData[k] = bytedata
+	}
+
+	//Document Transfer Request
+	req := &query.QueryTransferRequest{
+		Request: &query.Query{
+			Database:   d.Database,
+			Collection: d.Collection,
+			Namespace:  d.Namespace,
+			Querydata:  newData,
+		},
+	}
+	res, err := c.QueryTransfer(context.Background(), req)
+	if err != nil {
+		log.Fatalf("%v", err)
+	}
+
+	fmt.Println("----------------QUERY RESPONSE----------------")
 	fmt.Println(res)
 }
