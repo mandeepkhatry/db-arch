@@ -35,6 +35,7 @@ func TypeMarshal(typeOfData string, valueInterface interface{}) []byte {
 
 	}
 	fmt.Println("NEW TYPE OF DATA FOUND")
+	fmt.Println("DATA : ", valueInterface)
 	return []byte("New Type")
 }
 
@@ -93,6 +94,7 @@ func marshalBool(valueInterface interface{}) []byte {
 }
 
 func marshalDateTime(valueInterface interface{}) []byte {
+	fmt.Println(valueInterface.(time.Time))
 	byteKeyTimestamp, _ := valueInterface.(time.Time).MarshalBinary()
 	return byteKeyTimestamp
 
