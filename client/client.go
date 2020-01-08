@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"os"
+	"strconv"
 
 	"fmt"
 	"log"
@@ -60,7 +61,28 @@ func queryDocument(c query.QueryServiceClient) func(http.ResponseWriter, *http.R
 			Querydata:  dataInterface["data"].(map[string]interface{}),
 		}
 		fmt.Println("Document recieved : ", d)
-		sendQuery(c, d)
+		res := sendQuery(c, d)
+		w.Header().Add("Content-Type", "application/json")
+		w.WriteHeader(200)
+
+		result := make(map[string](map[string]interface{}))
+
+		//resultInterface represents different types of data
+		var resultInterface interface{}
+
+		for responseKey, responseValue := range res.GetResponse() {
+			eachKV := make(map[string]interface{})
+			for fieldName, fieldValue := range responseValue.GetResult() {
+				json.Unmarshal(fieldValue, &resultInterface)
+				eachKV[fieldName] = resultInterface
+			}
+			//key as string and value as map[string]interface{}
+			result["result "+strconv.Itoa(responseKey)] = eachKV
+		}
+
+		json.NewEncoder(w).Encode(result)
+
+		return
 	}
 }
 func main() {
@@ -141,7 +163,7 @@ func sendDocument(c document.DocumentServiceClient, d model.Document) {
 }
 
 //unary API call to send query to server.go
-func sendQuery(c query.QueryServiceClient, d model.Query) {
+func sendQuery(c query.QueryServiceClient, d model.Query) *query.QueryTransferResponse {
 	fmt.Println("----------------Sending Query-------------------")
 
 	newData := make(map[string][]byte)
@@ -171,4 +193,5 @@ func sendQuery(c query.QueryServiceClient, d model.Query) {
 
 	fmt.Println("----------------QUERY RESPONSE----------------")
 	fmt.Println(res)
+	return res
 }

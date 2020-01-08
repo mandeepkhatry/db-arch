@@ -10,12 +10,16 @@ message Query{
     map<string, bytes> querydata = 4;
 }
 
+message Response {
+    map<string, bytes> result = 1;
+}
+  
 message QueryTransferRequest{
     Query request = 1;
 }
 
 message QueryTransferResponse{
-    string response = 1;
+    repeated Response response = 1;
 }
 
 service QueryService{

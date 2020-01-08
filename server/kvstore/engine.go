@@ -385,19 +385,19 @@ func (s *StoreClient) SearchDocument(
 	rb := roaring.New()
 
 	for fieldName, fieldType := range typeOfData {
-	
+
 		//generate indexKey
 		indexKey := []byte(INDEX_KEY + string(dbID) + ":" + string(collectionID) + ":" + string(namespaceID) + ":" + fieldName + ":" + fieldType + ":" + string(byteOrderedData[fieldName]))
 
 		uniqueIDBitmapArray, err := s.Get(indexKey)
-		if uniqueIDBitmapArray == nil || err != nil {
+		if len(uniqueIDBitmapArray) == 0 || err != nil {
 			return [][]byte{}, err
 		}
 
 		if rb.IsEmpty() == true {
 
 			err := rb.UnmarshalBinary(uniqueIDBitmapArray)
-		
+
 			if err != nil {
 				return [][]byte{}, nil
 
@@ -436,12 +436,5 @@ func (s *StoreClient) SearchDocument(
 		return [][]byte{}, err
 	}
 
-	var resultInBytes map[string][]byte
-
-	for _, v := range resultArr {
-		json.Unmarshal(v, &resultInBytes)
-
-		fmt.Println("results: ", resultInBytes)
-	}
 	return resultArr, nil
 }

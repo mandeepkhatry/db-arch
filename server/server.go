@@ -4,6 +4,7 @@ import (
 	"context"
 	"db-arch/pb/document"
 	"db-arch/pb/query"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net"
@@ -100,14 +101,26 @@ func (*server) QueryTransfer(ctx context.Context, req *query.QueryTransferReques
 	fmt.Println("Namespace : ", namespace)
 	fmt.Println("Query Data : ", queryData)
 
-	_, err := store.SearchDocument(database, collection, namespace, queryData)
+	resultArray, err := store.SearchDocument(database, collection, namespace, queryData)
 	if err != nil {
 		return &query.QueryTransferResponse{}, err
 	}
-	
+
+	var resultInBytes map[string][]byte
+	response := make([]*query.Response, 0)
+
+	for _, v := range resultArray {
+		//bytes to map[string][]byte
+		json.Unmarshal(v, &resultInBytes)
+		var each_response query.Response
+
+		each_response.Result = resultInBytes
+		response = append(response, &each_response)
+	}
+
 	//Response to client
 	res := &query.QueryTransferResponse{
-		Response: "query recieved by server",
+		Response: response,
 	}
 
 	return res, nil
