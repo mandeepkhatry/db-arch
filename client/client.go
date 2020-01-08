@@ -37,7 +37,7 @@ func postDocument(c document.DocumentServiceClient) func(http.ResponseWriter, *h
 			Data:       dataInterface["data"].(map[string]interface{}),
 			Indices:    dataInterface["indices"].([]interface{}),
 		}
-		fmt.Println("Document recieved : ", d)
+
 		sendDocument(c, d)
 	}
 }
@@ -60,7 +60,7 @@ func queryDocument(c query.QueryServiceClient) func(http.ResponseWriter, *http.R
 			Namespace:  dataInterface["namespace"].(string),
 			Querydata:  dataInterface["data"].(map[string]interface{}),
 		}
-		fmt.Println("Document recieved : ", d)
+
 		res := sendQuery(c, d)
 		w.Header().Add("Content-Type", "application/json")
 		w.WriteHeader(200)
@@ -192,6 +192,6 @@ func sendQuery(c query.QueryServiceClient, d model.Query) *query.QueryTransferRe
 	}
 
 	fmt.Println("----------------QUERY RESPONSE----------------")
-	fmt.Println(res)
+	//fmt.Println(res)
 	return res
 }

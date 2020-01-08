@@ -44,12 +44,6 @@ func (*server) DocumentTransfer(ctx context.Context, req *document.DocumentTrans
 	*/
 	indices := req.GetRequest().GetIndices()
 
-	fmt.Println("Database : ", database)
-	fmt.Println("Collection : ", collection)
-	fmt.Println("Namespace : ", namespace)
-	fmt.Println("Data (DATBASE PURPOSE): ", data)
-	fmt.Println("Indices : ", indices)
-
 	//Response to client
 	res := &document.DocumentTransferResponse{
 		Response: "document recieved by server",
@@ -95,11 +89,6 @@ func (*server) QueryTransfer(ctx context.Context, req *query.QueryTransferReques
 				panic(err)
 			}
 	*/
-
-	fmt.Println("Database : ", database)
-	fmt.Println("Collection : ", collection)
-	fmt.Println("Namespace : ", namespace)
-	fmt.Println("Query Data : ", queryData)
 
 	resultArray, err := store.SearchDocument(database, collection, namespace, queryData)
 	if err != nil {

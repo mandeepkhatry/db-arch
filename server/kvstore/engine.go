@@ -4,13 +4,12 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"errors"
-	"fmt"
 
 	"github.com/RoaringBitmap/roaring"
 )
 
 /*
-Design considerations
+Design considerations`
 ---------------------
 A typical key consists of following parts:
 
@@ -62,14 +61,12 @@ func (s *StoreClient) GetDBIdentifier(dbname []byte) ([]byte, error) {
 		return []byte{}, errors.New("dbname empty")
 	}
 	val, err := s.Get([]byte(META_DB + string(dbname)))
-	fmt.Println("[[GetDBIdentifier]] value: ", string(val))
 	if err != nil {
 		return []byte{}, err
 	}
 	//if len(val) is zero, generate a new identifier
 	if len(val) == 0 {
 		identifier, err := s.GenerateDBIdentifier(dbname)
-		fmt.Println("[[GetDBIdentifier]] identifier", string(identifier))
 		if err != nil {
 			return []byte{}, err
 		}
@@ -329,9 +326,6 @@ func (s *StoreClient) InsertDocument(
 	if err != nil {
 		return err
 	}
-	fmt.Println("db", dbID)
-	fmt.Println("collection ", collectionID)
-	fmt.Println("namespace ", namespaceID)
 
 	//generate unique_id
 	uniqueID, err := s.GenerateUniqueID(dbID, collectionID, namespaceID)
@@ -364,7 +358,6 @@ func (s *StoreClient) SearchDocument(
 	database string, collection string,
 	namespace string, query map[string][]byte) ([][]byte, error) {
 
-	fmt.Println("[[engine/searchdocument]] start search!")
 	if len(database) == 0 || len(collection) == 0 || len(namespace) == 0 {
 		return [][]byte{}, errors.New("names can't be empty")
 	}
@@ -374,10 +367,6 @@ func (s *StoreClient) SearchDocument(
 	if err != nil {
 		return [][]byte{}, err
 	}
-
-	fmt.Println("[[engine/searchdocument]] db", dbID)
-	fmt.Println("[[engine/searchdocument]] collection ", collectionID)
-	fmt.Println("[[engine/searchdocument]] namespace ", namespaceID)
 
 	//find typeOfData  and get byteOrderedData
 	typeOfData, byteOrderedData := findTypeOfData(query)
