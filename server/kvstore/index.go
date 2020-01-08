@@ -34,8 +34,6 @@ func (s *StoreClient) IndexDocument(dbID []byte, collectionID []byte,
 		map['weight']=sorted double []byte
 	*/
 
-	//batchKV := make([]byte, 0)
-
 	//convert uniqueID into uint32 and change into roaring bitmap
 	num := binary.LittleEndian.Uint32(uniqueID)
 	rb := roaring.BitmapOf(num)
@@ -52,8 +50,9 @@ func (s *StoreClient) IndexDocument(dbID []byte, collectionID []byte,
 		fieldValue := newData[fieldToIndex]
 
 		//generate index key
-		indexKey := generateKey([]byte(INDEX_KEY), dbID, collectionID, namespaceID,
-			[]byte(fieldToIndex), []byte(typeOfData[fieldToIndex]), fieldValue)
+		indexKey := []byte(INDEX_KEY + string(dbID) + ":" + string(collectionID) + ":" + string(namespaceID) + ":" + fieldToIndex + ":" + typeOfData[fieldToIndex] + ":" + string(fieldValue))
+
+		fmt.Println("indexkey: ", (INDEX_KEY + string(dbID) + ":" + string(collectionID) + ":" + string(namespaceID) + ":" + fieldToIndex + ":" + typeOfData[fieldToIndex] + ":" + string(fieldValue)))
 
 		//get value for that index key
 		val, err := s.Get(indexKey)
@@ -63,10 +62,8 @@ func (s *StoreClient) IndexDocument(dbID []byte, collectionID []byte,
 
 		val = append(val, marshaledRB...)
 		//add to batch KV pair
-		//batchKV = append(batchKV, indexKey...)
-		//batchKV = append(batchKV, val...)
 		//write in batch
-		err = s.PutBatch(indexKey, val)
+		err = s.Put(indexKey, val)
 		if err != nil {
 			return err
 		}
