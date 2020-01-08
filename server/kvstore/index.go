@@ -33,7 +33,7 @@ func (s *StoreClient) IndexDocument(dbID []byte, collectionID []byte,
 		map['weight']=sorted double []byte
 	*/
 
-	//convert uniqueID into uint32 and change into roaring bitmap
+	//convert uniqueID into uint32
 	num := binary.LittleEndian.Uint32(uniqueID)
 
 	for i := 0; i < len(indices); i++ {
