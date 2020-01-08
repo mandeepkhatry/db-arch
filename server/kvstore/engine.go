@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+
+	"github.com/RoaringBitmap/roaring"
 )
 
 /*
@@ -355,4 +357,91 @@ func (s *StoreClient) InsertDocument(
 		return err
 	}
 	return nil
+}
+
+//SearchDocument queries document for given query params
+func (s *StoreClient) SearchDocument(
+	database string, collection string,
+	namespace string, query map[string][]byte) ([][]byte, error) {
+
+	fmt.Println("[[engine/searchdocument]] start search!")
+	if len(database) == 0 || len(collection) == 0 || len(namespace) == 0 {
+		return [][]byte{}, errors.New("names can't be empty")
+	}
+
+	//get identifiers for given
+	dbID, collectionID, namespaceID, err := s.GetIdentifiers(database, collection, namespace)
+	if err != nil {
+		return [][]byte{}, err
+	}
+
+	fmt.Println("[[engine/searchdocument]] db", dbID)
+	fmt.Println("[[engine/searchdocument]] collection ", collectionID)
+	fmt.Println("[[engine/searchdocument]] namespace ", namespaceID)
+
+	//find typeOfData  and get byteOrderedData
+	typeOfData, byteOrderedData := findTypeOfData(query)
+
+	rb := roaring.New()
+
+	for fieldName, fieldType := range typeOfData {
+	
+		//generate indexKey
+		indexKey := []byte(INDEX_KEY + string(dbID) + ":" + string(collectionID) + ":" + string(namespaceID) + ":" + fieldName + ":" + fieldType + ":" + string(byteOrderedData[fieldName]))
+
+		uniqueIDBitmapArray, err := s.Get(indexKey)
+		if uniqueIDBitmapArray == nil || err != nil {
+			return [][]byte{}, err
+		}
+
+		if rb.IsEmpty() == true {
+
+			err := rb.UnmarshalBinary(uniqueIDBitmapArray)
+		
+			if err != nil {
+				return [][]byte{}, nil
+
+			}
+		} else {
+
+			tmp := roaring.New()
+			err := tmp.UnmarshalBinary(uniqueIDBitmapArray)
+			if err != nil {
+				return [][]byte{}, err
+			}
+			rb = roaring.FastAnd(rb, tmp) //fast AND two bitmaps
+		}
+
+	}
+
+	if rb.IsEmpty() == true {
+		return [][]byte{}, nil
+	}
+
+	//retrieve document keys for search
+	searchKeys := make([][]byte, 0)
+	searchKeyLength := len(rb.ToArray())
+	uniqueIDArr := rb.ToArray() //get all IDs
+
+	//get all documents keys
+	for i := 0; i < searchKeyLength; i++ {
+		uniqueIDByte := make([]byte, 4)
+		binary.LittleEndian.PutUint32(uniqueIDByte, uniqueIDArr[i])
+		documentKeys := []byte(string(dbID) + ":" + string(collectionID) + ":" + string(namespaceID) + ":" + string(uniqueIDByte))
+		searchKeys = append(searchKeys, documentKeys)
+	}
+
+	resultArr, err := s.GetBatch(searchKeys)
+	if err != nil {
+		return [][]byte{}, err
+	}
+
+	var resultInBytes map[string][]byte
+
+	for _, v := range resultArr {
+		json.Unmarshal(v, &resultInBytes)
+
+		fmt.Println("results: ", resultInBytes)
+	}
+	return resultArr, nil
 }

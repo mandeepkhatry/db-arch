@@ -10,6 +10,7 @@ import (
 	"os"
 
 	"db-arch/server/kvstore"
+
 	"github.com/joho/godotenv"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
@@ -99,6 +100,11 @@ func (*server) QueryTransfer(ctx context.Context, req *query.QueryTransferReques
 	fmt.Println("Namespace : ", namespace)
 	fmt.Println("Query Data : ", queryData)
 
+	_, err := store.SearchDocument(database, collection, namespace, queryData)
+	if err != nil {
+		return &query.QueryTransferResponse{}, err
+	}
+	
 	//Response to client
 	res := &query.QueryTransferResponse{
 		Response: "query recieved by server",

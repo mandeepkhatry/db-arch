@@ -2,7 +2,6 @@ package kvstore
 
 import (
 	"encoding/binary"
-	"fmt"
 
 	"github.com/RoaringBitmap/roaring"
 )
@@ -36,12 +35,6 @@ func (s *StoreClient) IndexDocument(dbID []byte, collectionID []byte,
 
 	//convert uniqueID into uint32 and change into roaring bitmap
 	num := binary.LittleEndian.Uint32(uniqueID)
-	rb := roaring.BitmapOf(num)
-	marshaledRB, err := rb.MarshalBinary()
-	fmt.Println("marshalled binary: ", marshaledRB)
-	if err != nil {
-		return err
-	}
 
 	for i := 0; i < len(indices); i++ {
 		fieldToIndex := indices[i]
@@ -52,20 +45,41 @@ func (s *StoreClient) IndexDocument(dbID []byte, collectionID []byte,
 		//generate index key
 		indexKey := []byte(INDEX_KEY + string(dbID) + ":" + string(collectionID) + ":" + string(namespaceID) + ":" + fieldToIndex + ":" + typeOfData[fieldToIndex] + ":" + string(fieldValue))
 
-		fmt.Println("indexkey: ", (INDEX_KEY + string(dbID) + ":" + string(collectionID) + ":" + string(namespaceID) + ":" + fieldToIndex + ":" + typeOfData[fieldToIndex] + ":" + string(fieldValue)))
-
 		//get value for that index key
 		val, err := s.Get(indexKey)
 		if err != nil {
 			return err
 		}
+		//if index already exists, append uniqueIDs
+		if len(val) != 0 {
+			tmp := roaring.New()
+			err = tmp.UnmarshalBinary(val)
+			if err != nil {
+				return err
+			}
+			tmpArr := tmp.ToArray()
+			tmpArr = append(tmpArr, num)
 
-		val = append(val, marshaledRB...)
-		//add to batch KV pair
-		//write in batch
-		err = s.Put(indexKey, val)
-		if err != nil {
-			return err
+			rb := roaring.BitmapOf(tmpArr...)
+			marshaledRB, err := rb.MarshalBinary()
+			//add to batch KV pair
+			//write in batch
+			err = s.Put(indexKey, marshaledRB)
+			if err != nil {
+				return err
+			}
+		} else {
+
+			rb := roaring.BitmapOf(num)
+			marshaledRB, err := rb.MarshalBinary()
+			if err != nil {
+				return err
+			}
+
+			err = s.Put(indexKey, marshaledRB)
+			if err != nil {
+				return err
+			}
 		}
 
 	}
