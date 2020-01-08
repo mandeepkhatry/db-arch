@@ -22,11 +22,16 @@ import (
 func postDocument(c document.DocumentServiceClient) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		dataInterface := make(map[string]interface{})
-
 		err := json.NewDecoder(r.Body).Decode(&dataInterface)
 
 		if err != nil {
-			panic(err)
+			w.Header().Add("Content-Type", "application/json")
+			w.WriteHeader(200)
+			response := make(map[string]string)
+			response["message"] = "document not created"
+			json.NewEncoder(w).Encode(response)
+
+			return
 		}
 
 		//Document object
@@ -39,6 +44,14 @@ func postDocument(c document.DocumentServiceClient) func(http.ResponseWriter, *h
 		}
 
 		sendDocument(c, d)
+		w.Header().Add("Content-Type", "application/json")
+		w.WriteHeader(201)
+		response := make(map[string]string)
+		response["message"] = "document created"
+		json.NewEncoder(w).Encode(response)
+
+		return
+
 	}
 }
 
@@ -62,27 +75,37 @@ func queryDocument(c query.QueryServiceClient) func(http.ResponseWriter, *http.R
 		}
 
 		res := sendQuery(c, d)
+
+		if len(res.GetResponse()) > 0 {
+			w.Header().Add("Content-Type", "application/json")
+			w.WriteHeader(200)
+
+			result := make(map[string](map[string]interface{}))
+
+			//resultInterface represents different types of data
+			var resultInterface interface{}
+
+			for responseKey, responseValue := range res.GetResponse() {
+				eachKV := make(map[string]interface{})
+				for fieldName, fieldValue := range responseValue.GetResult() {
+					json.Unmarshal(fieldValue, &resultInterface)
+					eachKV[fieldName] = resultInterface
+				}
+				//key as string and value as map[string]interface{}
+				result["result "+strconv.Itoa(responseKey)] = eachKV
+			}
+
+			json.NewEncoder(w).Encode(result)
+
+			return
+
+		}
 		w.Header().Add("Content-Type", "application/json")
 		w.WriteHeader(200)
+		response := make(map[string]string)
+		response["message"] = "query not found"
+		json.NewEncoder(w).Encode(response)
 
-		result := make(map[string](map[string]interface{}))
-
-		//resultInterface represents different types of data
-		var resultInterface interface{}
-
-		for responseKey, responseValue := range res.GetResponse() {
-			eachKV := make(map[string]interface{})
-			for fieldName, fieldValue := range responseValue.GetResult() {
-				json.Unmarshal(fieldValue, &resultInterface)
-				eachKV[fieldName] = resultInterface
-			}
-			//key as string and value as map[string]interface{}
-			result["result "+strconv.Itoa(responseKey)] = eachKV
-		}
-
-		json.NewEncoder(w).Encode(result)
-
-		return
 	}
 }
 func main() {
