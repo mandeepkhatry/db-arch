@@ -17,7 +17,7 @@ import (
 )
 
 //Post Handler Function
-func postDocument(logger chan model.Document) func(http.ResponseWriter, *http.Request) {
+func postDocument(c document.DocumentServiceClient) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		dataInterface := make(map[string]interface{})
 
@@ -36,12 +36,11 @@ func postDocument(logger chan model.Document) func(http.ResponseWriter, *http.Re
 			Indices:    dataInterface["indices"].([]interface{}),
 		}
 		fmt.Println("Document recieved : ", d)
-		logger <- d
+		sendDocument(c, d)
 	}
 }
 
 func main() {
-
 	//read your env file and load them into ENV for this process
 	err := godotenv.Load()
 	if err != nil {
@@ -50,11 +49,6 @@ func main() {
 
 	//change grpc server target from .env file
 	grpcServerTarget := os.Getenv("GRPC_SERVER_TARGET")
-
-	//handlerChannel represents a channel from which documents are passed via HTTP request
-	handlerChannel := make(chan model.Document)
-
-	noExit := make(chan string)
 
 	//Starting GRPC Client
 	fmt.Println("-------------------Starting GRPC client-------------------")
@@ -71,28 +65,12 @@ func main() {
 	//close connection when program closes
 	defer conn.Close()
 
-	//Go routine to recieve documents from HTTP Request
-	go func() {
-		for {
-			val, ok := <-handlerChannel
-			if ok {
-				sendDocument(c, val)
-			}
-		}
-
-	}()
-
 	//Starting server
 	router := mux.NewRouter()
 
 	fmt.Println("-------------------Starting client-------------------")
-	router.HandleFunc("/documents", postDocument(handlerChannel)).Methods("POST")
+	router.HandleFunc("/documents", postDocument(c)).Methods("POST")
 	http.ListenAndServe(":8000", router)
-
-	<-noExit
-
-	close(handlerChannel)
-	close(noExit)
 
 }
 
