@@ -1,0 +1,27 @@
+syntax = "proto3";
+package pb;
+
+option go_package = "query";
+
+message Query{
+    string database = 1;
+    string collection = 2;
+    string namespace = 3;
+    map<string, bytes> querydata = 4;
+}
+
+message QueryTransferRequest{
+    Query request = 1;
+}
+
+message QueryTransferResponse{
+    string response = 1;
+}
+
+service QueryService{
+    rpc QueryTransfer(QueryTransferRequest) returns (QueryTransferResponse){};
+}
+
+
+
+

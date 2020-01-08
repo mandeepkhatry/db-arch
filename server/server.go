@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"db-arch/pb/document"
+	"db-arch/pb/query"
 	"fmt"
 	"log"
 	"net"
@@ -64,11 +65,43 @@ func (*server) DocumentTransfer(ctx context.Context, req *document.DocumentTrans
 		Type Specific data	typeSpecificData	map[string][]byte  <- INDEXING PURPOSE
 	*/
 
-	err:=store.InsertDocument(database,collection,namespace,data,indices)
-	if err!=nil{
+	err := store.InsertDocument(database, collection, namespace, data, indices)
+	if err != nil {
 		return &document.DocumentTransferResponse{
-			Response:             "",
+			Response: "",
 		}, err
+	}
+
+	return res, nil
+}
+
+//DocumentTransfer function that recieves request from client and returns response
+func (*server) QueryTransfer(ctx context.Context, req *query.QueryTransferRequest) (*query.QueryTransferResponse, error) {
+	fmt.Println("-----Got Query as Request-----")
+
+	database := req.GetRequest().GetDatabase()
+	collection := req.GetRequest().GetCollection()
+	namespace := req.GetRequest().GetNamespace()
+	//data in form of bytes
+	queryData := req.GetRequest().GetQuerydata()
+	/*
+		To unmarshal data use this :
+			var dataInterface map[string]interface{}
+			err := json.Unmarshal(data, &dataInterface)
+
+			if err != nil {
+				panic(err)
+			}
+	*/
+
+	fmt.Println("Database : ", database)
+	fmt.Println("Collection : ", collection)
+	fmt.Println("Namespace : ", namespace)
+	fmt.Println("Query Data : ", queryData)
+
+	//Response to client
+	res := &query.QueryTransferResponse{
+		Response: "query recieved by server",
 	}
 
 	return res, nil
@@ -76,8 +109,8 @@ func (*server) DocumentTransfer(ctx context.Context, req *document.DocumentTrans
 
 func main() {
 	//create a new TiKV store
-	err:=store.NewClient([]string{"127.0.0.1:2379"})
-	if err!=nil{
+	err := store.NewClient([]string{"127.0.0.1:2379"})
+	if err != nil {
 		panic(err)
 	}
 
@@ -104,6 +137,7 @@ func main() {
 	//New GRPC Server
 	s := grpc.NewServer()
 	document.RegisterDocumentServiceServer(s, &server{})
+	query.RegisterQueryServiceServer(s, &server{})
 
 	reflection.Register(s)
 
