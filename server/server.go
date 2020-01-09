@@ -63,7 +63,7 @@ func (*server) DocumentTransfer(ctx context.Context, req *document.DocumentTrans
 		statusCode := def.ERRTYPE[err]
 		return &document.DocumentTransferResponse{
 			Response: "",
-		}, grpc.Errorf(statusCode, err.Error())
+		}, status.Error(statusCode, err.Error())
 	}
 
 	return res, nil
