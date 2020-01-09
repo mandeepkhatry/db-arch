@@ -18,9 +18,8 @@ import (
 	"google.golang.org/grpc/reflection"
 )
 
+//create Store interface
 var store io.Store
-
-//TODO Business Logic to map golang specific type
 
 //Server struct
 type server struct{}
@@ -34,15 +33,6 @@ func (*server) DocumentTransfer(ctx context.Context, req *document.DocumentTrans
 	namespace := req.GetRequest().GetNamespace()
 	//data in form of bytes
 	data := req.GetRequest().GetData()
-	/*
-		To unmarshal data use this :
-			var dataInterface map[string]interface{}
-			err := json.Unmarshal(data, &dataInterface)
-
-			if err != nil {
-				panic(err)
-			}
-	*/
 	indices := req.GetRequest().GetIndices()
 
 	//Response to client
@@ -62,7 +52,7 @@ func (*server) DocumentTransfer(ctx context.Context, req *document.DocumentTrans
 		Type Specific data	typeSpecificData	map[string][]byte  <- INDEXING PURPOSE
 	*/
 
-	err := engine.InsertDocument(store,database, collection, namespace, data, indices)
+	err := engine.InsertDocument(store, database, collection, namespace, data, indices)
 	if err != nil {
 		return &document.DocumentTransferResponse{
 			Response: "",
@@ -81,17 +71,8 @@ func (*server) QueryTransfer(ctx context.Context, req *query.QueryTransferReques
 	namespace := req.GetRequest().GetNamespace()
 	//data in form of bytes
 	queryData := req.GetRequest().GetQuerydata()
-	/*
-		To unmarshal data use this :
-			var dataInterface map[string]interface{}
-			err := json.Unmarshal(data, &dataInterface)
 
-			if err != nil {
-				panic(err)
-			}
-	*/
-
-	resultArray, err := engine.SearchDocument(store,database, collection, namespace, queryData)
+	resultArray, err := engine.SearchDocument(store, database, collection, namespace, queryData)
 	if err != nil {
 		return &query.QueryTransferResponse{}, err
 	}
@@ -117,21 +98,11 @@ func (*server) QueryTransfer(ctx context.Context, req *query.QueryTransferReques
 }
 
 func main() {
-	//create a new TiKV store
-	//err := store.NewClient([]string{"127.0.0.1:2379"})
-	//if err != nil {
-	//	panic(err)
-	//}
-
 	//create a new TiKV store from factory
-	store=kvstore.NewTiKVFactory()
-	err:=store.NewClient([]string{"127.0.0.1:2379"})
-	if err!=nil{
-		panic(err)
-	}
+	store = kvstore.NewTiKVFactory([]string{"127.0.0.1:2379"})
 
 	//read your env file and load them into ENV for this process
-	err = godotenv.Load()
+	err := godotenv.Load()
 	if err != nil {
 		log.Fatal("Error loading .env file")
 	}
