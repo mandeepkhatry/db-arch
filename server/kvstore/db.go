@@ -32,7 +32,7 @@ type StoreClient struct {
 	Client *tikv.RawKVClient
 	m      sync.Mutex
 }
-
+f
 //NewClient creates a new tikv.RawKVClient
 func (s *StoreClient) NewClient(pdAddr []string) error {
 	cli, err := tikv.NewRawKVClient([]string(pdAddr), config.Security{})
@@ -62,14 +62,14 @@ func (s *StoreClient) Put(key []byte, value []byte) error {
 
 //PutBatch inserts key,val pairs in batch
 //uses tikv.RawClient
-func (s *StoreClient) PutBatch(args ...[]byte) error {
-	keys := make([][]byte, 0)
-	values := make([][]byte, 0)
+func (s *StoreClient) PutBatch(keys [][]byte, values [][]byte) error {
+	//keys := make([][]byte, 0)
+	//values := make([][]byte, 0)
 
-	for i := 0; i < len(args); i += 2 {
-		keys = append(keys, args[i])
-		values = append(values, args[i+1])
-	}
+	//for i := 0; i < len(args); i += 2 {
+	//	keys = append(keys, args[i])
+	//	values = append(values, args[i+1])
+	//}
 
 	log.Println("[[BatchPut]]")
 	err := s.Client.BatchPut(keys, values)

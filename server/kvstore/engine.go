@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"errors"
+	jsoniter "github.com/json-iterator/go"
 
 	"github.com/RoaringBitmap/roaring"
 )
@@ -321,6 +322,10 @@ func (s *StoreClient) InsertDocument(
 		return errors.New("names can't be empty")
 	}
 
+	//KV pair to insert in batch
+	keyCache:=make([][]byte,0)
+	valueCache:=make([][]byte,0)
+
 	//get database, collection,namespace identifiers
 	dbID, collectionID, namespaceID, err := s.GetIdentifiers(database, collection, namespace)
 	if err != nil {
@@ -340,16 +345,20 @@ func (s *StoreClient) InsertDocument(
 	}
 
 	//insert into db
-	err = s.Put(key, dataInBytes)
+	//err = s.Put(key, dataInBytes)
+	//if err != nil {
+	//	return err
+	//}
+	keyCache=append(keyCache,key)
+	valueCache=append(valueCache,dataInBytes)
+	//indexer
+	indexKey,indexValue,err = s.IndexDocument(dbID, collectionID, namespaceID, uniqueID, data, indices)
 	if err != nil {
 		return err
 	}
 
-	//indexer
-	err = s.IndexDocument(dbID, collectionID, namespaceID, uniqueID, data, indices)
-	if err != nil {
-		return err
-	}
+	keyCache=append(keyCache,indexKey)
+
 	return nil
 }
 
