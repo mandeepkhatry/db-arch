@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 
 	"fmt"
 	"log"
@@ -43,7 +44,23 @@ func postDocument(c document.DocumentServiceClient) func(http.ResponseWriter, *h
 			Indices:    dataInterface["indices"].([]interface{}),
 		}
 
-		sendDocument(c, d)
+		_, err = sendDocument(c, d)
+
+		if err != nil {
+			//TODO
+			response := make(map[string]string)
+			descFieldSplit := strings.Split(err.Error(), " desc = ")
+			response["description"] = descFieldSplit[1]
+			codeFieldSplit := strings.Split(descFieldSplit[0], " code = ")
+			response["code"] = codeFieldSplit[1]
+
+			w.Header().Add("Content-Type", "application/json")
+			w.WriteHeader(200)
+			json.NewEncoder(w).Encode(response)
+			return
+
+		}
+
 		w.Header().Add("Content-Type", "application/json")
 		w.WriteHeader(201)
 		response := make(map[string]string)
@@ -74,7 +91,21 @@ func queryDocument(c query.QueryServiceClient) func(http.ResponseWriter, *http.R
 			Querydata:  dataInterface["data"].(map[string]interface{}),
 		}
 
-		res := sendQuery(c, d)
+		res, err := sendQuery(c, d)
+
+		if err != nil {
+			response := make(map[string]string)
+			descFieldSplit := strings.Split(err.Error(), " desc = ")
+			response["description"] = descFieldSplit[1]
+			codeFieldSplit := strings.Split(descFieldSplit[0], " code = ")
+			response["code"] = codeFieldSplit[1]
+
+			w.Header().Add("Content-Type", "application/json")
+			w.WriteHeader(200)
+			json.NewEncoder(w).Encode(response)
+			return
+
+		}
 
 		if len(res.GetResponse()) > 0 {
 			w.Header().Add("Content-Type", "application/json")
@@ -105,7 +136,7 @@ func queryDocument(c query.QueryServiceClient) func(http.ResponseWriter, *http.R
 		response := make(map[string]string)
 		response["message"] = "query not found"
 		json.NewEncoder(w).Encode(response)
-
+		return
 	}
 }
 func main() {
@@ -146,7 +177,7 @@ func main() {
 }
 
 //unary API call to send document to server.go
-func sendDocument(c document.DocumentServiceClient, d model.Document) {
+func sendDocument(c document.DocumentServiceClient, d model.Document) (*document.DocumentTransferResponse, error) {
 	fmt.Println("----------------Sending Document-------------------")
 	indices := make([]string, 0)
 
@@ -178,15 +209,15 @@ func sendDocument(c document.DocumentServiceClient, d model.Document) {
 
 	res, err := c.DocumentTransfer(context.Background(), req)
 	if err != nil {
-		log.Fatalf("%v", err)
+		return res, err
 	}
 
 	fmt.Println("----------------RESPONSE----------------")
-	fmt.Println(res)
+	return res, nil
 }
 
 //unary API call to send query to server.go
-func sendQuery(c query.QueryServiceClient, d model.Query) *query.QueryTransferResponse {
+func sendQuery(c query.QueryServiceClient, d model.Query) (*query.QueryTransferResponse, error) {
 	fmt.Println("----------------Sending Query-------------------")
 
 	newData := make(map[string][]byte)
@@ -211,10 +242,10 @@ func sendQuery(c query.QueryServiceClient, d model.Query) *query.QueryTransferRe
 	}
 	res, err := c.QueryTransfer(context.Background(), req)
 	if err != nil {
-		log.Fatalf("%v", err)
+		return res, err
 	}
 
 	fmt.Println("----------------QUERY RESPONSE----------------")
 	//fmt.Println(res)
-	return res
+	return res, nil
 }

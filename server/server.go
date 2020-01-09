@@ -4,6 +4,7 @@ import (
 	"context"
 	"db-arch/pb/document"
 	"db-arch/pb/query"
+	"db-arch/server/internal/def"
 	"db-arch/server/internal/engine"
 	"db-arch/server/internal/kvstore"
 	"db-arch/server/io"
@@ -17,6 +18,10 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 )
+
+func init() {
+
+}
 
 //create Store interface
 var store io.Store
@@ -54,9 +59,10 @@ func (*server) DocumentTransfer(ctx context.Context, req *document.DocumentTrans
 
 	err := engine.InsertDocument(store, database, collection, namespace, data, indices)
 	if err != nil {
+		statusCode := def.ERRTYPE[err.Error()]
 		return &document.DocumentTransferResponse{
 			Response: "",
-		}, err
+		}, grpc.Errorf(statusCode, err.Error())
 	}
 
 	return res, nil
@@ -73,8 +79,13 @@ func (*server) QueryTransfer(ctx context.Context, req *query.QueryTransferReques
 	queryData := req.GetRequest().GetQuerydata()
 
 	resultArray, err := engine.SearchDocument(store, database, collection, namespace, queryData)
+
 	if err != nil {
-		return &query.QueryTransferResponse{}, err
+		//statusCode := def.ERRTYPE[err]
+		fmt.Println("ERR", err)
+		statusCode := def.ERRTYPE[err.Error()]
+		fmt.Println("STATUS ", statusCode)
+		return &query.QueryTransferResponse{}, grpc.Errorf(statusCode, err.Error())
 	}
 
 	var resultInBytes map[string][]byte
