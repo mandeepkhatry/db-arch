@@ -19,6 +19,7 @@ import (
 	"github.com/joho/godotenv"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
+	"google.golang.org/grpc/status"
 )
 
 func init() {
@@ -64,7 +65,7 @@ func (*server) DocumentTransfer(ctx context.Context, req *document.DocumentTrans
 		statusCode := def.ERRTYPE[err]
 		return &document.DocumentTransferResponse{
 			Response: "",
-		}, status.Error(statusCode, fmt.Sprintf("%s", err))
+		}, status.Error(statusCode, err.Error())
 	}
 
 	return res, nil
