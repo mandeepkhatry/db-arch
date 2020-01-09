@@ -5,7 +5,6 @@ import (
 	"db-arch/server/io"
 	"encoding/binary"
 	"encoding/json"
-	"errors"
 
 	"github.com/RoaringBitmap/roaring"
 )
@@ -338,7 +337,7 @@ func InsertDocument(s io.Store, database string,
 	data map[string][]byte, indices []string) error {
 
 	if len(database) == 0 || len(collection) == 0 || len(namespace) == 0 {
-		return errors.New("names can't be empty")
+		return def.NAMES_CANNOT_BE_EMPTY
 	}
 
 	//KV pair to insert in batch
@@ -405,7 +404,7 @@ func SearchDocument(s io.Store, database string, collection string,
 	}
 
 	if len(dbID) == 0 || len(collectionID) == 0 || len(namespaceID) == 0 {
-		return [][]byte{}, errors.New("id not found for given db,collection or namespace")
+		return [][]byte{}, def.IDENTIFIER_NOT_FOUND
 	}
 
 	//find typeOfData  and get byteOrderedData

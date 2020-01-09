@@ -20,6 +20,7 @@ var (
 	EMPTY_KEY_CANNOT_BE_DELETED error = errors.New("can't delete empty key")
 	START_OR_END_KEY_EMPTY      error = errors.New("start or end key is empty")
 	START_KEY_UNKNOWN           error = errors.New("Can't scan from last without knowing startKey")
+	IDENTIFIER_NOT_FOUND        error = errors.New("id not found for given db/collection/namespace")
 )
 
 //define gRPC error status codes
@@ -33,4 +34,5 @@ var ERRTYPE = map[error]int{
 	EMPTY_KEY_CANNOT_BE_DELETED: 3,
 	START_KEY_UNKNOWN:           3,
 	START_OR_END_KEY_EMPTY:      3,
+	IDENTIFIER_NOT_FOUND:        5,
 }
