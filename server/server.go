@@ -4,20 +4,21 @@ import (
 	"context"
 	"db-arch/pb/document"
 	"db-arch/pb/query"
+	"db-arch/server/io"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net"
 	"os"
 
-	"db-arch/server/kvstore"
+	"db-arch/server/internal/kvstore"
 
 	"github.com/joho/godotenv"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 )
 
-var store kvstore.StoreClient
+var store io.Store
 
 //TODO Business Logic to map golang specific type
 
@@ -117,10 +118,12 @@ func (*server) QueryTransfer(ctx context.Context, req *query.QueryTransferReques
 
 func main() {
 	//create a new TiKV store
-	err := store.NewClient([]string{"127.0.0.1:2379"})
+	client,err := store.NewClient([]string{"127.0.0.1:2379"})
 	if err != nil {
 		panic(err)
 	}
+
+
 
 	//read your env file and load them into ENV for this process
 	err = godotenv.Load()

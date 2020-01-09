@@ -1,53 +1,19 @@
-package kvstore
+package tikvdb
 
 import (
-	"errors"
-	"log"
-	"sync"
-
 	"github.com/pingcap/tidb/config"
 	"github.com/pingcap/tidb/store/tikv"
+	"log"
+	"sync"
 )
 
-const (
-	META_DBIDENTIFIER                 = "meta:dbidentifier"
-	META_COLLECTIONIDENTIFIER         = "meta:collectionidentifier"
-	META_NAMESPACEIDENTIFIER          = "meta:namespaceidentifier"
-	META_DBID                         = "meta:dbid:"
-	META_COLLECTIONID                 = "meta:collectionid:"
-	META_NAMESPACEID                  = "meta:namespaceid:"
-	META_DB                           = "meta:db:"
-	META_COLLECTION                   = "meta:collection:"
-	META_NAMESPACE                    = "meta:namespace:"
-	INDEX_KEY                         = "_index:"
-	UNIQUE_ID                         = "_uniqueid:"
-	UNIQUE_ID_INITIALCOUNT            = uint32(1)
-	DBIDENTIFIER_INITIALCOUNT         = uint16(1)
-	COLLECTIONIDENTIFIER_INITIALCOUNT = uint32(1)
-	NAMESPACEIDENTIFIER_INITIALCOUNT  = uint32(1)
-)
-
-//Store interface
-type Store interface{
-	NewClient(pdAddr string)
-	CloseClient()error
-	Put(key []byte,value []byte) error
-	PutBatch(keys [][]byte,values [][]byte) error
-	Get(key []byte)([]byte, error)
-	GetBatch(keys [][]byte)([][]byte,error)
-	DeleteKey(key []byte)error
-	DeleteKeyRange(startKey []byte,endKey []byte)error
-	Scan(startKey []byte,endKey []byte,limit int)([][]byte, [][]byte, error)
-	ReverseScan(startKey []byte, endKey []byte, limit int) ([][]byte, [][]byte, error)
-}
-
-//StoreClient is
+//StoreClient implements tikvdb.RawKVClient
 type StoreClient struct {
 	Client *tikv.RawKVClient
 	m      sync.Mutex
 }
 
-//NewClient creates a new tikv.RawKVClient
+//NewClient creates a new tikvdb.RawKVClient
 func (s *StoreClient) NewClient(pdAddr []string) error {
 	cli, err := tikv.NewRawKVClient([]string(pdAddr), config.Security{})
 	if err != nil {
@@ -57,7 +23,7 @@ func (s *StoreClient) NewClient(pdAddr []string) error {
 	return nil
 }
 
-//CloseClient closes tikv.RawKVClient
+//CloseClient closes tikvdb.RawKVClient
 func (s *StoreClient) CloseClient() error {
 	return s.Client.Close()
 }
@@ -75,7 +41,7 @@ func (s *StoreClient) Put(key []byte, value []byte) error {
 }
 
 //PutBatch inserts key,val pairs in batch
-//uses tikv.RawClient
+//uses tikvdb.RawClient
 func (s *StoreClient) PutBatch(keys [][]byte, values [][]byte) error {
 	log.Println("[[BatchPut]]")
 	err := s.Client.BatchPut(keys, values)
@@ -85,7 +51,7 @@ func (s *StoreClient) PutBatch(keys [][]byte, values [][]byte) error {
 	return nil
 }
 
-//Get reads value for give key
+//Get reads value for given key
 func (s *StoreClient) Get(key []byte) ([]byte, error) {
 	if len(key) == 0 {
 		return []byte{}, errors.New("key can't be empty")

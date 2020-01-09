@@ -1,13 +1,14 @@
-package kvstore
+package engine
 
 import (
+	"db-arch/server/internal/kvstore"
 	"encoding/binary"
 
 	"github.com/RoaringBitmap/roaring"
 )
 
 //IndexDocument indexes document in batch
-func (s *StoreClient) IndexDocument(dbID []byte, collectionID []byte,
+func (s *kvstore.StoreClient) IndexDocument(dbID []byte, collectionID []byte,
 	namespaceID []byte, uniqueID []byte,
 	data map[string][]byte, indices []string)([][]byte, [][]byte, error)  {
 
@@ -46,7 +47,7 @@ func (s *StoreClient) IndexDocument(dbID []byte, collectionID []byte,
 		fieldValue := newData[fieldToIndex]
 
 		//generate index key
-		indexKey := []byte(INDEX_KEY + string(dbID) + ":" + string(collectionID) + ":" + string(namespaceID) + ":" + fieldToIndex + ":" + typeOfData[fieldToIndex] + ":" + string(fieldValue))
+		indexKey := []byte(kvstore.INDEX_KEY + string(dbID) + ":" + string(collectionID) + ":" + string(namespaceID) + ":" + fieldToIndex + ":" + typeOfData[fieldToIndex] + ":" + string(fieldValue))
 
 		//get value for that index key
 		val, err := s.Get(indexKey)

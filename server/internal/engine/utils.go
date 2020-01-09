@@ -1,8 +1,8 @@
-package kvstore
+package engine
 
 import (
 	"bytes"
-	"db-arch/server/kvstore/marshal"
+	marshal2 "db-arch/server/internal/engine/marshal"
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
@@ -170,10 +170,10 @@ func findTypeOfData(data map[string][]byte) (map[string]string, map[string][]byt
 		if findIfFLoat(dataType) == true {
 			if checkIfInt(valueInterface.(float64)) {
 				typeOfData[k] = getApplicationSpecificType("int", valueInterface)
-				newData[k] = marshal.TypeMarshal("int", valueInterface)
+				newData[k] = marshal2.TypeMarshal("int", valueInterface)
 			} else {
 				typeOfData[k] = getApplicationSpecificType("float64", valueInterface)
-				newData[k] = marshal.TypeMarshal("float", valueInterface)
+				newData[k] = marshal2.TypeMarshal("float", valueInterface)
 			}
 
 		} else if dataType == "string" {
@@ -181,16 +181,16 @@ func findTypeOfData(data map[string][]byte) (map[string]string, map[string][]byt
 
 			if time.String() == "0001-01-01 00:00:00 +0000 UTC" {
 				typeOfData[k] = getApplicationSpecificType("string", valueInterface)
-				newData[k] = marshal.TypeMarshal("string", valueInterface)
+				newData[k] = marshal2.TypeMarshal("string", valueInterface)
 			} else {
 				var timeInterface interface{}
 				timeInterface = time
 				timeType := getApplicationSpecificType(fmt.Sprintf("%T", time), valueInterface)
 				typeOfData[k] = timeType
-				newData[k] = marshal.TypeMarshal("time.Time", timeInterface)
+				newData[k] = marshal2.TypeMarshal("time.Time", timeInterface)
 			}
 		} else {
-			newData[k] = marshal.TypeMarshal(dataType, valueInterface)
+			newData[k] = marshal2.TypeMarshal(dataType, valueInterface)
 			typeOfData[k] = getApplicationSpecificType(dataType, valueInterface)
 
 		}
