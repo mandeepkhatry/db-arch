@@ -9,7 +9,7 @@ import (
 //IndexDocument indexes document in batch
 func (s *StoreClient) IndexDocument(dbID []byte, collectionID []byte,
 	namespaceID []byte, uniqueID []byte,
-	data map[string][]byte, indices []string) error {
+	data map[string][]byte, indices []string) ([][]byte, [][]byte, error) {
 
 	/*
 
@@ -35,6 +35,8 @@ func (s *StoreClient) IndexDocument(dbID []byte, collectionID []byte,
 
 	//convert uniqueID into uint32
 	num := binary.LittleEndian.Uint32(uniqueID)
+	arrKeys := make([][]byte, 0)
+	arrValues := make([][]byte, 0)
 
 	for i := 0; i < len(indices); i++ {
 		fieldToIndex := indices[i]
@@ -48,14 +50,14 @@ func (s *StoreClient) IndexDocument(dbID []byte, collectionID []byte,
 		//get value for that index key
 		val, err := s.Get(indexKey)
 		if err != nil {
-			return err
+			return [][]byte{}, [][]byte{}, err
 		}
 		//if index already exists, append uniqueIDs
 		if len(val) != 0 {
 			tmp := roaring.New()
 			err = tmp.UnmarshalBinary(val)
 			if err != nil {
-				return err
+				return [][]byte{}, [][]byte{}, err
 			}
 			tmpArr := tmp.ToArray()
 			tmpArr = append(tmpArr, num)
@@ -66,23 +68,21 @@ func (s *StoreClient) IndexDocument(dbID []byte, collectionID []byte,
 			//write in batch
 			err = s.Put(indexKey, marshaledRB)
 			if err != nil {
-				return err
+				return [][]byte{}, [][]byte{}, err
 			}
 		} else {
 
 			rb := roaring.BitmapOf(num)
 			marshaledRB, err := rb.MarshalBinary()
 			if err != nil {
-				return err
+				return [][]byte{}, [][]byte{}, err
 			}
 
-			err = s.Put(indexKey, marshaledRB)
-			if err != nil {
-				return err
-			}
+			arrKeys = append(arrKeys, indexKey)
+			arrValues = append(arrValues, marshaledRB)
+
 		}
 
 	}
-
-	return nil
+	return arrKeys, arrValues, nil
 }

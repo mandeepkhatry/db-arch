@@ -333,7 +333,9 @@ func (s *StoreClient) InsertDocument(
 		return err
 	}
 	//generate key
-	key := generateKey(dbID, collectionID, namespaceID, uniqueID)
+
+	key := []byte(string(dbID) + ":" + string(collectionID) + ":" + string(namespaceID) + ":" + string(uniqueID))
+
 	dataInBytes, err := json.Marshal(data)
 	if err != nil {
 		return err
