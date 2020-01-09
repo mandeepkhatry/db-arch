@@ -27,12 +27,26 @@ const (
 	NAMESPACEIDENTIFIER_INITIALCOUNT  = uint32(1)
 )
 
+//Store interface
+type Store interface{
+	NewClient(pdAddr string)
+	CloseClient()error
+	Put(key []byte,value []byte) error
+	PutBatch(keys [][]byte,values [][]byte) error
+	Get(key []byte)([]byte, error)
+	GetBatch(keys [][]byte)([][]byte,error)
+	DeleteKey(key []byte)error
+	DeleteKeyRange(startKey []byte,endKey []byte)error
+	Scan(startKey []byte,endKey []byte,limit int)([][]byte, [][]byte, error)
+	ReverseScan(startKey []byte, endKey []byte, limit int) ([][]byte, [][]byte, error)
+}
+
 //StoreClient is
 type StoreClient struct {
 	Client *tikv.RawKVClient
 	m      sync.Mutex
 }
-f
+
 //NewClient creates a new tikv.RawKVClient
 func (s *StoreClient) NewClient(pdAddr []string) error {
 	cli, err := tikv.NewRawKVClient([]string(pdAddr), config.Security{})

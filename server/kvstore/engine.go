@@ -293,6 +293,7 @@ func (s *StoreClient) GenerateUniqueID(dbID []byte, collectionID []byte, namespa
 //GetIdentifiers returns database, collection and namespace identifiers for respective names given
 func (s *StoreClient) GetIdentifiers(database string, collection string,
 	namespace string) ([]byte, []byte, []byte, error) {
+
 	dbID, err := s.GetDBIdentifier([]byte(database))
 	if err != nil {
 		return []byte{}, []byte{}, []byte{}, err
