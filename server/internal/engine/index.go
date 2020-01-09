@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"db-arch/server/internal/def"
 	"db-arch/server/io"
 	"encoding/binary"
 
@@ -12,15 +13,6 @@ func IndexDocument(s io.Store, dbID []byte, collectionID []byte,
 	namespaceID []byte, uniqueID []byte,
 	data map[string][]byte, indices []string) ([][]byte, [][]byte, error) {
 
-	/*
-
-		1. Find type of data
-		2. Generate index key
-		3. Read db
-		4. Append unique_id using roaring bitmap
-		5. Write to db in batch
-
-	*/
 	typeOfData, newData := findTypeOfData(data)
 	/*
 		typeOfData:
@@ -46,7 +38,7 @@ func IndexDocument(s io.Store, dbID []byte, collectionID []byte,
 		fieldValue := newData[fieldToIndex]
 
 		//generate index key
-		indexKey := []byte(INDEX_KEY + string(dbID) + ":" + string(collectionID) + ":" + string(namespaceID) + ":" + fieldToIndex + ":" + typeOfData[fieldToIndex] + ":" + string(fieldValue))
+		indexKey := []byte(def.INDEX_KEY + string(dbID) + ":" + string(collectionID) + ":" + string(namespaceID) + ":" + fieldToIndex + ":" + typeOfData[fieldToIndex] + ":" + string(fieldValue))
 
 		//get value for that index key
 		val, err := s.Get(indexKey)

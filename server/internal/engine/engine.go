@@ -1,10 +1,12 @@
 package engine
 
 import (
+	"db-arch/server/internal/def"
 	"db-arch/server/io"
 	"encoding/binary"
 	"encoding/json"
 	"errors"
+
 	"github.com/RoaringBitmap/roaring"
 )
 
@@ -21,8 +23,8 @@ Total key size for a document will be 14 bytes.
 */
 
 //GenerateDBIdentifier return db identifier value and increase identifier by 1
-func GenerateDBIdentifier(s io.Store,dbname []byte) ([]byte, error) {
-	val, err := s.Get([]byte(META_DBIDENTIFIER))
+func GenerateDBIdentifier(s io.Store, dbname []byte) ([]byte, error) {
+	val, err := s.Get([]byte(def.META_DBIDENTIFIER))
 	if err != nil {
 		return []byte{}, err
 	}
@@ -30,8 +32,8 @@ func GenerateDBIdentifier(s io.Store,dbname []byte) ([]byte, error) {
 	if len(val) == 0 {
 		identifier := make([]byte, 2)
 
-		binary.LittleEndian.PutUint16(identifier, DBIDENTIFIER_INITIALCOUNT)
-		err := s.Put([]byte(META_DBIDENTIFIER), identifier)
+		binary.LittleEndian.PutUint16(identifier, def.DBIDENTIFIER_INITIALCOUNT)
+		err := s.Put([]byte(def.META_DBIDENTIFIER), identifier)
 		if err != nil {
 			return []byte{}, err
 		}
@@ -41,7 +43,7 @@ func GenerateDBIdentifier(s io.Store,dbname []byte) ([]byte, error) {
 		identifier := binary.LittleEndian.Uint16(val)
 		binary.LittleEndian.PutUint16(val, uint16(identifier+1))
 
-		err := s.Put([]byte(META_DBIDENTIFIER), val)
+		err := s.Put([]byte(def.META_DBIDENTIFIER), val)
 		if err != nil {
 			return []byte{}, err
 		}
@@ -52,27 +54,27 @@ func GenerateDBIdentifier(s io.Store,dbname []byte) ([]byte, error) {
 //GetDBIdentifier returns identifier for given db
 func GetDBIdentifier(s io.Store, dbname []byte) ([]byte, error) {
 	if len(dbname) == 0 {
-		return []byte{}, errors.New("dbname empty")
+		return []byte{}, def.DB_NAME_EMPTY
 	}
-	val, err := s.Get([]byte(META_DB + string(dbname)))
+	val, err := s.Get([]byte(def.META_DB + string(dbname)))
 	if err != nil {
 		return []byte{}, err
 	}
 	//if len(val) is zero, generate a new identifier
 	if len(val) == 0 {
-		identifier, err := GenerateDBIdentifier(s,dbname)
+		identifier, err := GenerateDBIdentifier(s, dbname)
 		if err != nil {
 			return []byte{}, err
 		}
 
 		//insert meta:db:dname = identifier
-		err = s.Put([]byte(META_DB+string(dbname)), identifier)
+		err = s.Put([]byte(def.META_DB+string(dbname)), identifier)
 		if err != nil {
 			return []byte{}, err
 		}
 
 		//insert meta:dbid:id=name
-		err = s.Put(append([]byte(META_DBID), identifier...), dbname)
+		err = s.Put(append([]byte(def.META_DBID), identifier...), dbname)
 		if err != nil {
 			return []byte{}, err
 		}
@@ -87,9 +89,9 @@ func GetDBIdentifier(s io.Store, dbname []byte) ([]byte, error) {
 //GetDBName returns database name for given db identifier
 func GetDBName(s io.Store, dbIdentifier []byte) (string, error) {
 	if len(dbIdentifier) == 0 {
-		return "", errors.New("dbidentifier empty")
+		return "", def.DB_IDENTIFIER_EMPTY
 	}
-	val, err := s.Get(append([]byte(META_DBID), dbIdentifier...))
+	val, err := s.Get(append([]byte(def.META_DBID), dbIdentifier...))
 	if err != nil {
 		return "", err
 	}
@@ -101,14 +103,14 @@ func GetDBName(s io.Store, dbIdentifier []byte) (string, error) {
 
 //GenerateCollectionIdentifier generate collection identifier and increases identifier by 1
 func GenerateCollectionIdentifier(s io.Store, collectionname []byte) ([]byte, error) {
-	val, err := s.Get([]byte(META_COLLECTIONIDENTIFIER))
+	val, err := s.Get([]byte(def.META_COLLECTIONIDENTIFIER))
 	if err != nil {
 		return []byte{}, err
 	}
 	if len(val) == 0 {
 		identifier := make([]byte, 4)
-		binary.LittleEndian.PutUint32(identifier, COLLECTIONIDENTIFIER_INITIALCOUNT)
-		err := s.Put([]byte(META_COLLECTIONIDENTIFIER), identifier)
+		binary.LittleEndian.PutUint32(identifier, def.COLLECTIONIDENTIFIER_INITIALCOUNT)
+		err := s.Put([]byte(def.META_COLLECTIONIDENTIFIER), identifier)
 		if err != nil {
 			return []byte{}, err
 		}
@@ -116,7 +118,7 @@ func GenerateCollectionIdentifier(s io.Store, collectionname []byte) ([]byte, er
 	} else {
 		identifier := binary.LittleEndian.Uint32(val)
 		binary.LittleEndian.PutUint32(val, uint32(identifier+1))
-		err := s.Put([]byte(META_COLLECTIONIDENTIFIER), val)
+		err := s.Put([]byte(def.META_COLLECTIONIDENTIFIER), val)
 		if err != nil {
 			return []byte{}, err
 		}
@@ -127,27 +129,27 @@ func GenerateCollectionIdentifier(s io.Store, collectionname []byte) ([]byte, er
 //GetCollectionIdentifier returns identifier for given collection
 func GetCollectionIdentifier(s io.Store, collection []byte) ([]byte, error) {
 	if len(collection) == 0 {
-		return []byte{}, errors.New("collection name empty")
+		return []byte{}, def.COLLECTION_NAME_EMPTY
 	}
-	val, err := s.Get([]byte(META_COLLECTION + string(collection)))
+	val, err := s.Get([]byte(def.META_COLLECTION + string(collection)))
 	if err != nil {
 		return []byte{}, err
 	}
 	//if len(val) is zero, generate a new identifier
 	if len(val) == 0 {
-		identifier, err := GenerateCollectionIdentifier(s,collection)
+		identifier, err := GenerateCollectionIdentifier(s, collection)
 		if err != nil {
 			return []byte{}, err
 		}
 
 		//insert meta:collection:collectionname = identifier
-		err = s.Put([]byte(META_COLLECTION+string(collection)), identifier)
+		err = s.Put([]byte(def.META_COLLECTION+string(collection)), identifier)
 		if err != nil {
 			return []byte{}, err
 		}
 
 		//insert meta:collectionid:id=name
-		err = s.Put(append([]byte(META_COLLECTIONID), identifier...), collection)
+		err = s.Put(append([]byte(def.META_COLLECTIONID), identifier...), collection)
 		if err != nil {
 			return []byte{}, err
 		}
@@ -162,9 +164,9 @@ func GetCollectionIdentifier(s io.Store, collection []byte) ([]byte, error) {
 //GetCollectionName returns collection name for given collection identifier
 func GetCollectionName(s io.Store, collectionIdentifier []byte) (string, error) {
 	if len(collectionIdentifier) == 0 {
-		return "", errors.New("collection identifier empty")
+		return "", def.COLLECTION_IDENTIFIER_EMPTY
 	}
-	val, err := s.Get([]byte(META_COLLECTIONID + string(collectionIdentifier)))
+	val, err := s.Get([]byte(def.META_COLLECTIONID + string(collectionIdentifier)))
 	if err != nil {
 		return "", err
 	}
@@ -173,7 +175,7 @@ func GetCollectionName(s io.Store, collectionIdentifier []byte) (string, error) 
 
 //GenerateNamespaceIdentifier generates namespace identifier value and increases identifier by 1
 func GenerateNamespaceIdentifier(s io.Store, namespace []byte) ([]byte, error) {
-	val, err := s.Get([]byte(META_NAMESPACEIDENTIFIER))
+	val, err := s.Get([]byte(def.META_NAMESPACEIDENTIFIER))
 	if err != nil {
 		return []byte{}, err
 	}
@@ -181,8 +183,8 @@ func GenerateNamespaceIdentifier(s io.Store, namespace []byte) ([]byte, error) {
 	//TODO: move this logic to separate init file for performance
 	if len(val) == 0 {
 		identifier := make([]byte, 4)
-		binary.LittleEndian.PutUint32(identifier, NAMESPACEIDENTIFIER_INITIALCOUNT)
-		err := s.Put([]byte(META_NAMESPACEIDENTIFIER), identifier)
+		binary.LittleEndian.PutUint32(identifier, def.NAMESPACEIDENTIFIER_INITIALCOUNT)
+		err := s.Put([]byte(def.META_NAMESPACEIDENTIFIER), identifier)
 		if err != nil {
 			return []byte{}, err
 		}
@@ -190,7 +192,7 @@ func GenerateNamespaceIdentifier(s io.Store, namespace []byte) ([]byte, error) {
 	} else {
 		identifier := binary.LittleEndian.Uint32(val)
 		binary.LittleEndian.PutUint32(val, uint32(identifier+1))
-		err := s.Put([]byte(META_NAMESPACEIDENTIFIER), val)
+		err := s.Put([]byte(def.META_NAMESPACEIDENTIFIER), val)
 		if err != nil {
 			return []byte{}, err
 		}
@@ -201,27 +203,27 @@ func GenerateNamespaceIdentifier(s io.Store, namespace []byte) ([]byte, error) {
 //GetNamespaceIdentifier returns identifier for given namespace
 func GetNamespaceIdentifier(s io.Store, namespace []byte) ([]byte, error) {
 	if len(namespace) == 0 {
-		return []byte{}, errors.New("collection name empty")
+		return []byte{}, def.COLLECTION_NAME_EMPTY
 	}
-	val, err := s.Get([]byte(META_NAMESPACE + string(namespace)))
+	val, err := s.Get([]byte(def.META_NAMESPACE + string(namespace)))
 	if err != nil {
 		return []byte{}, err
 	}
 	//if len(val) is zero, generate a new identifier
 	if len(val) == 0 {
-		identifier, err := GenerateNamespaceIdentifier(s,namespace)
+		identifier, err := GenerateNamespaceIdentifier(s, namespace)
 		if err != nil {
 			return []byte{}, err
 		}
 
 		//insert meta:namespace:namespace = identifier
-		err = s.Put([]byte(META_NAMESPACE+string(namespace)), identifier)
+		err = s.Put([]byte(def.META_NAMESPACE+string(namespace)), identifier)
 		if err != nil {
 			return []byte{}, err
 		}
 
 		//insert meta:namespaceid:id=name
-		err = s.Put(append([]byte(META_NAMESPACEID), identifier...), namespace)
+		err = s.Put(append([]byte(def.META_NAMESPACEID), identifier...), namespace)
 		if err != nil {
 			return []byte{}, err
 		}
@@ -236,9 +238,9 @@ func GetNamespaceIdentifier(s io.Store, namespace []byte) ([]byte, error) {
 //GetNamespaceName return namespace name with given namespace identifier
 func GetNamespaceName(s io.Store, namespaceIdentifier []byte) (string, error) {
 	if len(namespaceIdentifier) == 0 {
-		return "", errors.New("namespace identifier empty")
+		return "", def.NAMESPACE_IDENTIFIER_EMPTY
 	}
-	val, err := s.Get([]byte(META_NAMESPACEID + string(namespaceIdentifier)))
+	val, err := s.Get([]byte(def.META_NAMESPACEID + string(namespaceIdentifier)))
 	if err != nil {
 		return "", err
 	}
@@ -246,7 +248,7 @@ func GetNamespaceName(s io.Store, namespaceIdentifier []byte) (string, error) {
 }
 
 //GenerateUniqueID generates a 4 byte unique_id
-func GenerateUniqueID(s io.Store,dbID []byte, collectionID []byte, namespaceID []byte) ([]byte, error) {
+func GenerateUniqueID(s io.Store, dbID []byte, collectionID []byte, namespaceID []byte) ([]byte, error) {
 	//unixTimeStamp := getUnixTimestamp() //returns 4 byte UNIX timestamp
 	//macAddr := getMACAddress()          //returns 3 byte MAC Address
 	//processID := getProcessID()         //returns 2 byte ProcessID
@@ -256,7 +258,7 @@ func GenerateUniqueID(s io.Store,dbID []byte, collectionID []byte, namespaceID [
 	//uniqueID = append(uniqueID, counter...)
 
 	//key format: _uniqueid:dbid:colid:namespaceid=idcounter
-	idKey := []byte(UNIQUE_ID + string(dbID) + ":" + string(collectionID) + ":" + string(namespaceID))
+	idKey := []byte(def.UNIQUE_ID + string(dbID) + ":" + string(collectionID) + ":" + string(namespaceID))
 	idCounterInBytes, err := s.Get(idKey)
 	if err != nil {
 		return []byte{}, err
@@ -265,7 +267,7 @@ func GenerateUniqueID(s io.Store,dbID []byte, collectionID []byte, namespaceID [
 	if len(idCounterInBytes) == 0 {
 		//create 4 byte identifier for each document
 		counterByte := make([]byte, 4)
-		binary.LittleEndian.PutUint32(counterByte, UNIQUE_ID_INITIALCOUNT)
+		binary.LittleEndian.PutUint32(counterByte, def.UNIQUE_ID_INITIALCOUNT)
 		err := s.Put(idKey, counterByte)
 		if err != nil {
 			return []byte{}, err
@@ -290,17 +292,17 @@ func GenerateUniqueID(s io.Store,dbID []byte, collectionID []byte, namespaceID [
 func GetIdentifiers(s io.Store, database string, collection string,
 	namespace string) ([]byte, []byte, []byte, error) {
 
-	dbID, err := GetDBIdentifier(s,[]byte(database))
+	dbID, err := GetDBIdentifier(s, []byte(database))
 	if err != nil {
 		return []byte{}, []byte{}, []byte{}, err
 	}
 
-	collectionID, err := GetCollectionIdentifier(s,[]byte(collection))
+	collectionID, err := GetCollectionIdentifier(s, []byte(collection))
 	if err != nil {
 		return []byte{}, []byte{}, []byte{}, err
 	}
 
-	namespaceID, err := GetNamespaceIdentifier(s,[]byte(namespace))
+	namespaceID, err := GetNamespaceIdentifier(s, []byte(namespace))
 	if err != nil {
 		return []byte{}, []byte{}, []byte{}, err
 	}
@@ -309,27 +311,26 @@ func GetIdentifiers(s io.Store, database string, collection string,
 }
 
 //SearchIdentifiers retrieves db,collection,namespace identifiers only if they exist
-func SearchIdentifiers(s io.Store, dbname string,collection string,
-	namespace string)([]byte,[]byte,[]byte,error){
+func SearchIdentifiers(s io.Store, dbname string, collection string,
+	namespace string) ([]byte, []byte, []byte, error) {
 
-	dbID,err:=s.Get([]byte(META_DB + string(dbname)))
-	if len(dbID)==0 || err != nil {
-		return []byte{},[]byte{},[]byte{}, err
+	dbID, err := s.Get([]byte(def.META_DB + string(dbname)))
+	if len(dbID) == 0 || err != nil {
+		return []byte{}, []byte{}, []byte{}, err
 	}
 
-	collectionID,err:=s.Get([]byte(META_COLLECTION + string(collection)))
-	if len(collectionID)==0 || err!=nil{
-		return []byte{},[]byte{},[]byte{},err
+	collectionID, err := s.Get([]byte(def.META_COLLECTION + string(collection)))
+	if len(collectionID) == 0 || err != nil {
+		return []byte{}, []byte{}, []byte{}, err
 	}
 
-	namespaceID,err:=s.Get([]byte(META_NAMESPACE + string(namespace)))
-	if len(namespaceID)==0 || err!=nil{
-		return []byte{},[]byte{},[]byte{},err
+	namespaceID, err := s.Get([]byte(def.META_NAMESPACE + string(namespace)))
+	if len(namespaceID) == 0 || err != nil {
+		return []byte{}, []byte{}, []byte{}, err
 	}
 
-	return dbID,collectionID,namespaceID,nil
+	return dbID, collectionID, namespaceID, nil
 }
-
 
 //InsertDocument retrieves identifiers and inserts document to database
 func InsertDocument(s io.Store, database string,
@@ -341,17 +342,17 @@ func InsertDocument(s io.Store, database string,
 	}
 
 	//KV pair to insert in batch
-	keyCache:=make([][]byte,0)
-	valueCache:=make([][]byte,0)
+	keyCache := make([][]byte, 0)
+	valueCache := make([][]byte, 0)
 
 	//get database, collection,namespace identifiers
-	dbID, collectionID, namespaceID, err := GetIdentifiers(s,database, collection, namespace)
+	dbID, collectionID, namespaceID, err := GetIdentifiers(s, database, collection, namespace)
 	if err != nil {
 		return err
 	}
 
 	//generate unique_id
-	uniqueID, err := GenerateUniqueID(s,dbID, collectionID, namespaceID)
+	uniqueID, err := GenerateUniqueID(s, dbID, collectionID, namespaceID)
 	if err != nil {
 		return err
 	}
@@ -369,23 +370,22 @@ func InsertDocument(s io.Store, database string,
 	//if err != nil {
 	//	return err
 	//}
-	keyCache=append(keyCache,key)
-	valueCache=append(valueCache,dataInBytes)
+	keyCache = append(keyCache, key)
+	valueCache = append(valueCache, dataInBytes)
 	//indexer
-	indexKey,indexValue,err := IndexDocument(s,dbID, collectionID, namespaceID, uniqueID, data, indices)
+	indexKey, indexValue, err := IndexDocument(s, dbID, collectionID, namespaceID, uniqueID, data, indices)
 	if err != nil {
 		return err
 	}
 
-	keyCache=append(keyCache,indexKey...)
-	valueCache=append(valueCache,indexValue...)
+	keyCache = append(keyCache, indexKey...)
+	valueCache = append(valueCache, indexValue...)
 
 	//insert in batch
-	err=s.PutBatch(keyCache,valueCache)
-	if err!=nil{
+	err = s.PutBatch(keyCache, valueCache)
+	if err != nil {
 		return err
 	}
-
 
 	return nil
 }
@@ -395,16 +395,16 @@ func SearchDocument(s io.Store, database string, collection string,
 	namespace string, query map[string][]byte) ([][]byte, error) {
 
 	if len(database) == 0 || len(collection) == 0 || len(namespace) == 0 {
-		return [][]byte{}, errors.New("names can't be empty")
+		return [][]byte{}, def.NAMES_CANNOT_BE_EMPTY
 	}
 
 	//get identifiers for given
-	dbID, collectionID, namespaceID, err := SearchIdentifiers(s,database, collection, namespace)
+	dbID, collectionID, namespaceID, err := SearchIdentifiers(s, database, collection, namespace)
 	if err != nil {
 		return [][]byte{}, err
 	}
 
-	if len(dbID)==0 || len(collectionID)==0 || len(namespaceID)==0{
+	if len(dbID) == 0 || len(collectionID) == 0 || len(namespaceID) == 0 {
 		return [][]byte{}, errors.New("id not found for given db,collection or namespace")
 	}
 
@@ -416,7 +416,7 @@ func SearchDocument(s io.Store, database string, collection string,
 	for fieldName, fieldType := range typeOfData {
 
 		//generate indexKey
-		indexKey := []byte(INDEX_KEY + string(dbID) + ":" + string(collectionID) + ":" + string(namespaceID) + ":" + fieldName + ":" + fieldType + ":" + string(byteOrderedData[fieldName]))
+		indexKey := []byte(def.INDEX_KEY + string(dbID) + ":" + string(collectionID) + ":" + string(namespaceID) + ":" + fieldName + ":" + fieldType + ":" + string(byteOrderedData[fieldName]))
 
 		uniqueIDBitmapArray, err := s.Get(indexKey)
 		if len(uniqueIDBitmapArray) == 0 || err != nil {

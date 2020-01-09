@@ -1,4 +1,8 @@
-package engine
+package def
+
+/*
+Package def defines constants, error messages and their status codes
+*/
 
 const (
 	META_DBIDENTIFIER                 = "meta:dbidentifier"

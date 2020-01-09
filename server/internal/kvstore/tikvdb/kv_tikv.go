@@ -1,7 +1,7 @@
 package tikvdb
 
 import (
-	"errors"
+	"db-arch/server/internal/def"
 	"log"
 	"sync"
 
@@ -33,7 +33,7 @@ func (s *StoreClient) CloseClient() error {
 //Put inserts key,val to TiKV
 func (s *StoreClient) Put(key []byte, value []byte) error {
 	if len(key) == 0 {
-		return errors.New("Key can't be empty")
+		return def.KEY_EMPTY
 	}
 	err := s.Client.Put(key, value)
 	if err != nil {
@@ -56,7 +56,7 @@ func (s *StoreClient) PutBatch(keys [][]byte, values [][]byte) error {
 //Get reads value for given key
 func (s *StoreClient) Get(key []byte) ([]byte, error) {
 	if len(key) == 0 {
-		return []byte{}, errors.New("key can't be empty")
+		return []byte{}, def.KEY_EMPTY
 	}
 	val, err := s.Client.Get(key)
 	if err != nil {
@@ -72,7 +72,7 @@ func (s *StoreClient) Get(key []byte) ([]byte, error) {
 //GetBatch retrieves values for given pair of keys in batch
 func (s *StoreClient) GetBatch(keys [][]byte) ([][]byte, error) {
 	if len(keys) == 0 {
-		return [][]byte{}, errors.New("keys are empty")
+		return [][]byte{}, def.KEY_EMPTY
 	}
 
 	val, err := s.Client.BatchGet(keys)
@@ -85,7 +85,7 @@ func (s *StoreClient) GetBatch(keys [][]byte) ([][]byte, error) {
 //DeleteKey deletes given key from TiKV
 func (s *StoreClient) DeleteKey(key []byte) error {
 	if len(key) == 0 {
-		return errors.New("cannot delete empty key")
+		return def.EMPTY_KEY_CANNOT_BE_DELETED
 	}
 	err := s.Client.Delete(key)
 	if err != nil {
@@ -97,7 +97,7 @@ func (s *StoreClient) DeleteKey(key []byte) error {
 //DeleteKeyRange deletes key,val pairs from startKey to endKey from TiKV
 func (s *StoreClient) DeleteKeyRange(startKey []byte, endKey []byte) error {
 	if len(startKey) == 0 && len(endKey) == 0 {
-		return errors.New("start or End keys cannot be empty")
+		return def.START_OR_END_KEY_EMPTY
 	}
 	err := s.Client.DeleteRange(startKey, endKey)
 	if err != nil {
@@ -124,7 +124,7 @@ func (s *StoreClient) ReverseScan(startKey []byte, endKey []byte, limit int) ([]
 	keys := make([][]byte, 0)
 	values := make([][]byte, 0)
 	if len(startKey) == 0 {
-		return [][]byte{}, [][]byte{}, errors.New("Can't scan from last without knowing startKey")
+		return [][]byte{}, [][]byte{}, def.START_KEY_UNKNOWN
 	}
 	keys, values, err := s.Client.ReverseScan(startKey, endKey, limit)
 	if err != nil {
