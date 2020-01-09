@@ -6,6 +6,7 @@ Package def defines constants, error messages and their status codes
 
 import (
 	"errors"
+	"fmt"
 )
 
 //ERROR MESSAGES
@@ -24,15 +25,15 @@ var (
 )
 
 //define gRPC error status codes
-var ERRTYPE = map[error]int{
-	DB_NAME_EMPTY:               3,
-	DB_IDENTIFIER_EMPTY:         3,
-	COLLECTION_NAME_EMPTY:       3,
-	COLLECTION_IDENTIFIER_EMPTY: 3,
-	NAMESPACE_IDENTIFIER_EMPTY:  3,
-	KEY_EMPTY:                   3,
-	EMPTY_KEY_CANNOT_BE_DELETED: 3,
-	START_KEY_UNKNOWN:           3,
-	START_OR_END_KEY_EMPTY:      3,
-	IDENTIFIER_NOT_FOUND:        5,
+var ERRTYPE = map[string]int{
+	fmt.Sprintf("%s", DB_NAME_EMPTY):               3,
+	fmt.Sprintf("%s", DB_IDENTIFIER_EMPTY):         3,
+	fmt.Sprintf("%s", COLLECTION_NAME_EMPTY):       3,
+	fmt.Sprintf("%s", COLLECTION_IDENTIFIER_EMPTY): 3,
+	fmt.Sprintf("%s", NAMESPACE_IDENTIFIER_EMPTY):  3,
+	fmt.Sprintf("%s", KEY_EMPTY):                   3,
+	fmt.Sprintf("%s", EMPTY_KEY_CANNOT_BE_DELETED): 3,
+	fmt.Sprintf("%s", START_KEY_UNKNOWN):           3,
+	fmt.Sprintf("%s", START_OR_END_KEY_EMPTY):      3,
+	fmt.Sprintf("%s", IDENTIFIER_NOT_FOUND):        5,
 }
