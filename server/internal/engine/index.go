@@ -1,16 +1,16 @@
 package engine
 
 import (
-	"db-arch/server/internal/kvstore"
+	"db-arch/server/io"
 	"encoding/binary"
 
 	"github.com/RoaringBitmap/roaring"
 )
 
 //IndexDocument indexes document in batch
-func (s *kvstore.StoreClient) IndexDocument(dbID []byte, collectionID []byte,
+func IndexDocument(s io.Store, dbID []byte, collectionID []byte,
 	namespaceID []byte, uniqueID []byte,
-	data map[string][]byte, indices []string)([][]byte, [][]byte, error)  {
+	data map[string][]byte, indices []string) ([][]byte, [][]byte, error) {
 
 	/*
 
@@ -34,7 +34,6 @@ func (s *kvstore.StoreClient) IndexDocument(dbID []byte, collectionID []byte,
 		map['weight']=sorted double []byte
 	*/
 
-
 	//convert uniqueID into uint32
 	num := binary.LittleEndian.Uint32(uniqueID)
 	arrKeys := make([][]byte, 0)
@@ -47,19 +46,19 @@ func (s *kvstore.StoreClient) IndexDocument(dbID []byte, collectionID []byte,
 		fieldValue := newData[fieldToIndex]
 
 		//generate index key
-		indexKey := []byte(kvstore.INDEX_KEY + string(dbID) + ":" + string(collectionID) + ":" + string(namespaceID) + ":" + fieldToIndex + ":" + typeOfData[fieldToIndex] + ":" + string(fieldValue))
+		indexKey := []byte(INDEX_KEY + string(dbID) + ":" + string(collectionID) + ":" + string(namespaceID) + ":" + fieldToIndex + ":" + typeOfData[fieldToIndex] + ":" + string(fieldValue))
 
 		//get value for that index key
 		val, err := s.Get(indexKey)
 		if err != nil {
-			return [][]byte{},[][]byte{},err
+			return [][]byte{}, [][]byte{}, err
 		}
 		//if index already exists, append uniqueIDs
 		if len(val) != 0 {
 			tmp := roaring.New()
 			err = tmp.UnmarshalBinary(val)
 			if err != nil {
-				return [][]byte{},[][]byte{},err
+				return [][]byte{}, [][]byte{}, err
 			}
 			tmpArr := tmp.ToArray()
 			tmpArr = append(tmpArr, num)
@@ -69,7 +68,7 @@ func (s *kvstore.StoreClient) IndexDocument(dbID []byte, collectionID []byte,
 			//add to DB
 			err = s.Put(indexKey, marshaledRB)
 			if err != nil {
-				return [][]byte{},[][]byte{},err
+				return [][]byte{}, [][]byte{}, err
 			}
 		} else {
 

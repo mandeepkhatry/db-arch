@@ -4,7 +4,7 @@ package io
 type Store interface{
 	//NewClient creates a new db client
 	//takes placement driver address as arg
-	NewClient(pdAddr string) (error)
+	NewClient(pdAddr []string) (error)
 	//CloseClient closes DB client
 	CloseClient()error
 	//Put inserts key,val to DB

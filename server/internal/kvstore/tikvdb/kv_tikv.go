@@ -1,10 +1,12 @@
 package tikvdb
 
 import (
-	"github.com/pingcap/tidb/config"
-	"github.com/pingcap/tidb/store/tikv"
+	"errors"
 	"log"
 	"sync"
+
+	"github.com/pingcap/tidb/config"
+	"github.com/pingcap/tidb/store/tikv"
 )
 
 //StoreClient implements tikvdb.RawKVClient

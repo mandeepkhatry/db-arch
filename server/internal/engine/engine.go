@@ -1,7 +1,7 @@
 package engine
 
 import (
-	"db-arch/server/internal/kvstore"
+	"db-arch/server/io"
 	"encoding/binary"
 	"encoding/json"
 	"errors"
@@ -21,7 +21,7 @@ Total key size for a document will be 14 bytes.
 */
 
 //GenerateDBIdentifier return db identifier value and increase identifier by 1
-func (s *kvstore.StoreClient) GenerateDBIdentifier(dbname []byte) ([]byte, error) {
+func GenerateDBIdentifier(s io.Store,dbname []byte) ([]byte, error) {
 	val, err := s.Get([]byte(META_DBIDENTIFIER))
 	if err != nil {
 		return []byte{}, err
@@ -50,7 +50,7 @@ func (s *kvstore.StoreClient) GenerateDBIdentifier(dbname []byte) ([]byte, error
 }
 
 //GetDBIdentifier returns identifier for given db
-func (s *kvstore.StoreClient) GetDBIdentifier(dbname []byte) ([]byte, error) {
+func GetDBIdentifier(s io.Store, dbname []byte) ([]byte, error) {
 	if len(dbname) == 0 {
 		return []byte{}, errors.New("dbname empty")
 	}
@@ -60,7 +60,7 @@ func (s *kvstore.StoreClient) GetDBIdentifier(dbname []byte) ([]byte, error) {
 	}
 	//if len(val) is zero, generate a new identifier
 	if len(val) == 0 {
-		identifier, err := s.GenerateDBIdentifier(dbname)
+		identifier, err := GenerateDBIdentifier(s,dbname)
 		if err != nil {
 			return []byte{}, err
 		}
@@ -85,7 +85,7 @@ func (s *kvstore.StoreClient) GetDBIdentifier(dbname []byte) ([]byte, error) {
 }
 
 //GetDBName returns database name for given db identifier
-func (s *kvstore.StoreClient) GetDBName(dbIdentifier []byte) (string, error) {
+func GetDBName(s io.Store, dbIdentifier []byte) (string, error) {
 	if len(dbIdentifier) == 0 {
 		return "", errors.New("dbidentifier empty")
 	}
@@ -100,7 +100,7 @@ func (s *kvstore.StoreClient) GetDBName(dbIdentifier []byte) (string, error) {
 }
 
 //GenerateCollectionIdentifier generate collection identifier and increases identifier by 1
-func (s *kvstore.StoreClient) GenerateCollectionIdentifier(collectionname []byte) ([]byte, error) {
+func GenerateCollectionIdentifier(s io.Store, collectionname []byte) ([]byte, error) {
 	val, err := s.Get([]byte(META_COLLECTIONIDENTIFIER))
 	if err != nil {
 		return []byte{}, err
@@ -125,7 +125,7 @@ func (s *kvstore.StoreClient) GenerateCollectionIdentifier(collectionname []byte
 }
 
 //GetCollectionIdentifier returns identifier for given collection
-func (s *kvstore.StoreClient) GetCollectionIdentifier(collection []byte) ([]byte, error) {
+func GetCollectionIdentifier(s io.Store, collection []byte) ([]byte, error) {
 	if len(collection) == 0 {
 		return []byte{}, errors.New("collection name empty")
 	}
@@ -135,7 +135,7 @@ func (s *kvstore.StoreClient) GetCollectionIdentifier(collection []byte) ([]byte
 	}
 	//if len(val) is zero, generate a new identifier
 	if len(val) == 0 {
-		identifier, err := s.GenerateCollectionIdentifier(collection)
+		identifier, err := GenerateCollectionIdentifier(s,collection)
 		if err != nil {
 			return []byte{}, err
 		}
@@ -160,7 +160,7 @@ func (s *kvstore.StoreClient) GetCollectionIdentifier(collection []byte) ([]byte
 }
 
 //GetCollectionName returns collection name for given collection identifier
-func (s *kvstore.StoreClient) GetCollectionName(collectionIdentifier []byte) (string, error) {
+func GetCollectionName(s io.Store, collectionIdentifier []byte) (string, error) {
 	if len(collectionIdentifier) == 0 {
 		return "", errors.New("collection identifier empty")
 	}
@@ -172,7 +172,7 @@ func (s *kvstore.StoreClient) GetCollectionName(collectionIdentifier []byte) (st
 }
 
 //GenerateNamespaceIdentifier generates namespace identifier value and increases identifier by 1
-func (s *kvstore.StoreClient) GenerateNamespaceIdentifier(namespace []byte) ([]byte, error) {
+func GenerateNamespaceIdentifier(s io.Store, namespace []byte) ([]byte, error) {
 	val, err := s.Get([]byte(META_NAMESPACEIDENTIFIER))
 	if err != nil {
 		return []byte{}, err
@@ -199,7 +199,7 @@ func (s *kvstore.StoreClient) GenerateNamespaceIdentifier(namespace []byte) ([]b
 }
 
 //GetNamespaceIdentifier returns identifier for given namespace
-func (s *kvstore.StoreClient) GetNamespaceIdentifier(namespace []byte) ([]byte, error) {
+func GetNamespaceIdentifier(s io.Store, namespace []byte) ([]byte, error) {
 	if len(namespace) == 0 {
 		return []byte{}, errors.New("collection name empty")
 	}
@@ -209,7 +209,7 @@ func (s *kvstore.StoreClient) GetNamespaceIdentifier(namespace []byte) ([]byte, 
 	}
 	//if len(val) is zero, generate a new identifier
 	if len(val) == 0 {
-		identifier, err := s.GenerateNamespaceIdentifier(namespace)
+		identifier, err := GenerateNamespaceIdentifier(s,namespace)
 		if err != nil {
 			return []byte{}, err
 		}
@@ -234,7 +234,7 @@ func (s *kvstore.StoreClient) GetNamespaceIdentifier(namespace []byte) ([]byte, 
 }
 
 //GetNamespaceName return namespace name with given namespace identifier
-func (s *kvstore.StoreClient) GetNamespaceName(namespaceIdentifier []byte) (string, error) {
+func GetNamespaceName(s io.Store, namespaceIdentifier []byte) (string, error) {
 	if len(namespaceIdentifier) == 0 {
 		return "", errors.New("namespace identifier empty")
 	}
@@ -246,7 +246,7 @@ func (s *kvstore.StoreClient) GetNamespaceName(namespaceIdentifier []byte) (stri
 }
 
 //GenerateUniqueID generates a 4 byte unique_id
-func (s *kvstore.StoreClient) GenerateUniqueID(dbID []byte, collectionID []byte, namespaceID []byte) ([]byte, error) {
+func GenerateUniqueID(s io.Store,dbID []byte, collectionID []byte, namespaceID []byte) ([]byte, error) {
 	//unixTimeStamp := getUnixTimestamp() //returns 4 byte UNIX timestamp
 	//macAddr := getMACAddress()          //returns 3 byte MAC Address
 	//processID := getProcessID()         //returns 2 byte ProcessID
@@ -287,20 +287,20 @@ func (s *kvstore.StoreClient) GenerateUniqueID(dbID []byte, collectionID []byte,
 
 //GetIdentifiers returns database, collection and namespace identifiers for respective names given
 //and generate new ones if they do not exist
-func (s *kvstore.StoreClient) GetIdentifiers(database string, collection string,
+func GetIdentifiers(s io.Store, database string, collection string,
 	namespace string) ([]byte, []byte, []byte, error) {
 
-	dbID, err := s.GetDBIdentifier([]byte(database))
+	dbID, err := GetDBIdentifier(s,[]byte(database))
 	if err != nil {
 		return []byte{}, []byte{}, []byte{}, err
 	}
 
-	collectionID, err := s.GetCollectionIdentifier([]byte(collection))
+	collectionID, err := GetCollectionIdentifier(s,[]byte(collection))
 	if err != nil {
 		return []byte{}, []byte{}, []byte{}, err
 	}
 
-	namespaceID, err := s.GetNamespaceIdentifier([]byte(namespace))
+	namespaceID, err := GetNamespaceIdentifier(s,[]byte(namespace))
 	if err != nil {
 		return []byte{}, []byte{}, []byte{}, err
 	}
@@ -309,7 +309,7 @@ func (s *kvstore.StoreClient) GetIdentifiers(database string, collection string,
 }
 
 //SearchIdentifiers retrieves db,collection,namespace identifiers only if they exist
-func (s *kvstore.StoreClient) SearchIdentifiers(dbname string,collection string,
+func SearchIdentifiers(s io.Store, dbname string,collection string,
 	namespace string)([]byte,[]byte,[]byte,error){
 
 	dbID,err:=s.Get([]byte(META_DB + string(dbname)))
@@ -332,8 +332,8 @@ func (s *kvstore.StoreClient) SearchIdentifiers(dbname string,collection string,
 
 
 //InsertDocument retrieves identifiers and inserts document to database
-func (s *kvstore.StoreClient) InsertDocument(
-	database string, collection string, namespace string,
+func InsertDocument(s io.Store, database string,
+	collection string, namespace string,
 	data map[string][]byte, indices []string) error {
 
 	if len(database) == 0 || len(collection) == 0 || len(namespace) == 0 {
@@ -345,13 +345,13 @@ func (s *kvstore.StoreClient) InsertDocument(
 	valueCache:=make([][]byte,0)
 
 	//get database, collection,namespace identifiers
-	dbID, collectionID, namespaceID, err := s.GetIdentifiers(database, collection, namespace)
+	dbID, collectionID, namespaceID, err := GetIdentifiers(s,database, collection, namespace)
 	if err != nil {
 		return err
 	}
 
 	//generate unique_id
-	uniqueID, err := s.GenerateUniqueID(dbID, collectionID, namespaceID)
+	uniqueID, err := GenerateUniqueID(s,dbID, collectionID, namespaceID)
 	if err != nil {
 		return err
 	}
@@ -372,7 +372,7 @@ func (s *kvstore.StoreClient) InsertDocument(
 	keyCache=append(keyCache,key)
 	valueCache=append(valueCache,dataInBytes)
 	//indexer
-	indexKey,indexValue,err := s.IndexDocument(dbID, collectionID, namespaceID, uniqueID, data, indices)
+	indexKey,indexValue,err := IndexDocument(s,dbID, collectionID, namespaceID, uniqueID, data, indices)
 	if err != nil {
 		return err
 	}
@@ -391,8 +391,7 @@ func (s *kvstore.StoreClient) InsertDocument(
 }
 
 //SearchDocument queries document for given query params
-func (s *kvstore.StoreClient) SearchDocument(
-	database string, collection string,
+func SearchDocument(s io.Store, database string, collection string,
 	namespace string, query map[string][]byte) ([][]byte, error) {
 
 	if len(database) == 0 || len(collection) == 0 || len(namespace) == 0 {
@@ -400,7 +399,7 @@ func (s *kvstore.StoreClient) SearchDocument(
 	}
 
 	//get identifiers for given
-	dbID, collectionID, namespaceID, err := s.SearchIdentifiers(database, collection, namespace)
+	dbID, collectionID, namespaceID, err := SearchIdentifiers(s,database, collection, namespace)
 	if err != nil {
 		return [][]byte{}, err
 	}
@@ -410,7 +409,7 @@ func (s *kvstore.StoreClient) SearchDocument(
 	}
 
 	//find typeOfData  and get byteOrderedData
-	typeOfData, byteOrderedData := kvstore.findTypeOfData(query)
+	typeOfData, byteOrderedData := findTypeOfData(query)
 
 	rb := roaring.New()
 

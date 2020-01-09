@@ -4,14 +4,14 @@ import (
 	"context"
 	"db-arch/pb/document"
 	"db-arch/pb/query"
+	"db-arch/server/internal/engine"
+	"db-arch/server/internal/kvstore"
 	"db-arch/server/io"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net"
 	"os"
-
-	"db-arch/server/internal/kvstore"
 
 	"github.com/joho/godotenv"
 	"google.golang.org/grpc"
@@ -62,7 +62,7 @@ func (*server) DocumentTransfer(ctx context.Context, req *document.DocumentTrans
 		Type Specific data	typeSpecificData	map[string][]byte  <- INDEXING PURPOSE
 	*/
 
-	err := store.InsertDocument(database, collection, namespace, data, indices)
+	err := engine.InsertDocument(store,database, collection, namespace, data, indices)
 	if err != nil {
 		return &document.DocumentTransferResponse{
 			Response: "",
@@ -91,7 +91,7 @@ func (*server) QueryTransfer(ctx context.Context, req *query.QueryTransferReques
 			}
 	*/
 
-	resultArray, err := store.SearchDocument(database, collection, namespace, queryData)
+	resultArray, err := engine.SearchDocument(store,database, collection, namespace, queryData)
 	if err != nil {
 		return &query.QueryTransferResponse{}, err
 	}
@@ -118,12 +118,17 @@ func (*server) QueryTransfer(ctx context.Context, req *query.QueryTransferReques
 
 func main() {
 	//create a new TiKV store
-	client,err := store.NewClient([]string{"127.0.0.1:2379"})
-	if err != nil {
+	//err := store.NewClient([]string{"127.0.0.1:2379"})
+	//if err != nil {
+	//	panic(err)
+	//}
+
+	//create a new TiKV store from factory
+	store=kvstore.NewTiKVFactory()
+	err:=store.NewClient([]string{"127.0.0.1:2379"})
+	if err!=nil{
 		panic(err)
 	}
-
-
 
 	//read your env file and load them into ENV for this process
 	err = godotenv.Load()
