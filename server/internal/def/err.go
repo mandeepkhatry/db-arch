@@ -7,6 +7,8 @@ Package def defines constants, error messages and their status codes
 import (
 	"errors"
 	"fmt"
+
+	"google.golang.org/grpc/codes"
 )
 
 //ERROR MESSAGES
@@ -25,15 +27,15 @@ var (
 )
 
 //define gRPC error status codes
-var ERRTYPE = map[string]int{
-	fmt.Sprintf("%s", DB_NAME_EMPTY):               3,
-	fmt.Sprintf("%s", DB_IDENTIFIER_EMPTY):         3,
-	fmt.Sprintf("%s", COLLECTION_NAME_EMPTY):       3,
-	fmt.Sprintf("%s", COLLECTION_IDENTIFIER_EMPTY): 3,
-	fmt.Sprintf("%s", NAMESPACE_IDENTIFIER_EMPTY):  3,
-	fmt.Sprintf("%s", KEY_EMPTY):                   3,
-	fmt.Sprintf("%s", EMPTY_KEY_CANNOT_BE_DELETED): 3,
-	fmt.Sprintf("%s", START_KEY_UNKNOWN):           3,
-	fmt.Sprintf("%s", START_OR_END_KEY_EMPTY):      3,
-	fmt.Sprintf("%s", IDENTIFIER_NOT_FOUND):        5,
+var ERRTYPE = map[string]codes.Code{
+	fmt.Sprintf("%s", DB_NAME_EMPTY):               codes.InvalidArgument,
+	fmt.Sprintf("%s", DB_IDENTIFIER_EMPTY):         codes.InvalidArgument,
+	fmt.Sprintf("%s", COLLECTION_NAME_EMPTY):       codes.InvalidArgument,
+	fmt.Sprintf("%s", COLLECTION_IDENTIFIER_EMPTY): codes.InvalidArgument,
+	fmt.Sprintf("%s", NAMESPACE_IDENTIFIER_EMPTY):  codes.InvalidArgument,
+	fmt.Sprintf("%s", KEY_EMPTY):                   codes.InvalidArgument,
+	fmt.Sprintf("%s", EMPTY_KEY_CANNOT_BE_DELETED): codes.InvalidArgument,
+	fmt.Sprintf("%s", START_KEY_UNKNOWN):           codes.InvalidArgument,
+	fmt.Sprintf("%s", START_OR_END_KEY_EMPTY):      codes.InvalidArgument,
+	fmt.Sprintf("%s", IDENTIFIER_NOT_FOUND):        codes.NotFound,
 }
