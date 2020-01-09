@@ -6,8 +6,6 @@ Package def defines constants, error messages and their status codes
 
 import (
 	"errors"
-	"fmt"
-
 	"google.golang.org/grpc/codes"
 )
 
@@ -27,15 +25,16 @@ var (
 )
 
 //define gRPC error status codes
-var ERRTYPE = map[string]codes.Code{
-	fmt.Sprintf("%s", DB_NAME_EMPTY):               codes.InvalidArgument,
-	fmt.Sprintf("%s", DB_IDENTIFIER_EMPTY):         codes.InvalidArgument,
-	fmt.Sprintf("%s", COLLECTION_NAME_EMPTY):       codes.InvalidArgument,
-	fmt.Sprintf("%s", COLLECTION_IDENTIFIER_EMPTY): codes.InvalidArgument,
-	fmt.Sprintf("%s", NAMESPACE_IDENTIFIER_EMPTY):  codes.InvalidArgument,
-	fmt.Sprintf("%s", KEY_EMPTY):                   codes.InvalidArgument,
-	fmt.Sprintf("%s", EMPTY_KEY_CANNOT_BE_DELETED): codes.InvalidArgument,
-	fmt.Sprintf("%s", START_KEY_UNKNOWN):           codes.InvalidArgument,
-	fmt.Sprintf("%s", START_OR_END_KEY_EMPTY):      codes.InvalidArgument,
-	fmt.Sprintf("%s", IDENTIFIER_NOT_FOUND):        codes.NotFound,
+var ERRTYPE = map[error]codes.Code{
+	DB_NAME_EMPTY:               codes.InvalidArgument,
+	DB_IDENTIFIER_EMPTY:         codes.InvalidArgument,
+	COLLECTION_NAME_EMPTY:       codes.InvalidArgument,
+	COLLECTION_IDENTIFIER_EMPTY: codes.InvalidArgument,
+	NAMESPACE_IDENTIFIER_EMPTY:  codes.InvalidArgument,
+	KEY_EMPTY:                   codes.InvalidArgument,
+	EMPTY_KEY_CANNOT_BE_DELETED: codes.InvalidArgument,
+	START_KEY_UNKNOWN:           codes.InvalidArgument,
+	START_OR_END_KEY_EMPTY:      codes.InvalidArgument,
+	NAMES_CANNOT_BE_EMPTY:       codes.InvalidArgument,
+	IDENTIFIER_NOT_FOUND:        codes.NotFound,
 }

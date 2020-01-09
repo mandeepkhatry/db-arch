@@ -17,6 +17,7 @@ import (
 	"github.com/joho/godotenv"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
+	"google.golang.org/grpc/status"
 )
 
 func init() {
@@ -59,7 +60,7 @@ func (*server) DocumentTransfer(ctx context.Context, req *document.DocumentTrans
 
 	err := engine.InsertDocument(store, database, collection, namespace, data, indices)
 	if err != nil {
-		statusCode := def.ERRTYPE[err.Error()]
+		statusCode := def.ERRTYPE[err]
 		return &document.DocumentTransferResponse{
 			Response: "",
 		}, grpc.Errorf(statusCode, err.Error())
@@ -81,11 +82,9 @@ func (*server) QueryTransfer(ctx context.Context, req *query.QueryTransferReques
 	resultArray, err := engine.SearchDocument(store, database, collection, namespace, queryData)
 
 	if err != nil {
-		//statusCode := def.ERRTYPE[err]
-		fmt.Println("ERR", err)
-		statusCode := def.ERRTYPE[err.Error()]
-		fmt.Println("STATUS ", statusCode)
-		return &query.QueryTransferResponse{}, grpc.Errorf(statusCode, err.Error())
+
+		statusCode := def.ERRTYPE[err]
+		return &query.QueryTransferResponse{}, status.Error(statusCode, err.Error())
 	}
 
 	var resultInBytes map[string][]byte
