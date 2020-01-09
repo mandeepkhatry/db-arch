@@ -291,6 +291,7 @@ func (s *StoreClient) GenerateUniqueID(dbID []byte, collectionID []byte, namespa
 }
 
 //GetIdentifiers returns database, collection and namespace identifiers for respective names given
+//and generate new ones if they do not exist
 func (s *StoreClient) GetIdentifiers(database string, collection string,
 	namespace string) ([]byte, []byte, []byte, error) {
 	dbID, err := s.GetDBIdentifier([]byte(database))
@@ -310,6 +311,29 @@ func (s *StoreClient) GetIdentifiers(database string, collection string,
 
 	return dbID, collectionID, namespaceID, nil
 }
+
+//SearchIdentifiers retrieves db,collection,namespace identifiers only if they exist
+func (s *StoreClient) SearchIdentifiers(dbname string,collection string,
+	namespace string)([]byte,[]byte,[]byte,error){
+
+	dbID,err:=s.Get([]byte(META_DB + string(dbname)))
+	if len(dbID)==0 || err != nil {
+		return []byte{},[]byte{},[]byte{}, err
+	}
+
+	collectionID,err:=s.Get([]byte(META_COLLECTION + string(collection)))
+	if len(collectionID)==0 || err!=nil{
+		return []byte{},[]byte{},[]byte{},err
+	}
+
+	namespaceID,err:=s.Get([]byte(META_NAMESPACE + string(namespace)))
+	if len(namespaceID)==0 || err!=nil{
+		return []byte{},[]byte{},[]byte{},err
+	}
+
+	return dbID,collectionID,namespaceID,nil
+}
+
 
 //InsertDocument retrieves identifiers and inserts document to database
 func (s *StoreClient) InsertDocument(
@@ -380,9 +404,13 @@ func (s *StoreClient) SearchDocument(
 	}
 
 	//get identifiers for given
-	dbID, collectionID, namespaceID, err := s.GetIdentifiers(database, collection, namespace)
+	dbID, collectionID, namespaceID, err := s.SearchIdentifiers(database, collection, namespace)
 	if err != nil {
 		return [][]byte{}, err
+	}
+
+	if len(dbID)==0 || len(collectionID)==0 || len(namespaceID)==0{
+		return [][]byte{}, errors.New("id not found for given db,collection or namespace")
 	}
 
 	//find typeOfData  and get byteOrderedData
