@@ -63,14 +63,6 @@ func (s *StoreClient) Put(key []byte, value []byte) error {
 //PutBatch inserts key,val pairs in batch
 //uses tikv.RawClient
 func (s *StoreClient) PutBatch(keys [][]byte, values [][]byte) error {
-	//keys := make([][]byte, 0)
-	//values := make([][]byte, 0)
-
-	//for i := 0; i < len(args); i += 2 {
-	//	keys = append(keys, args[i])
-	//	values = append(values, args[i+1])
-	//}
-
 	log.Println("[[BatchPut]]")
 	err := s.Client.BatchPut(keys, values)
 	if err != nil {

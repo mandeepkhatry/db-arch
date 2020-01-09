@@ -36,6 +36,8 @@ func (s *StoreClient) IndexDocument(dbID []byte, collectionID []byte,
 
 	//convert uniqueID into uint32
 	num := binary.LittleEndian.Uint32(uniqueID)
+	arrKeys := make([][]byte, 0)
+	arrValues := make([][]byte, 0)
 
 	for i := 0; i < len(indices); i++ {
 		fieldToIndex := indices[i]
@@ -73,16 +75,14 @@ func (s *StoreClient) IndexDocument(dbID []byte, collectionID []byte,
 			rb := roaring.BitmapOf(num)
 			marshaledRB, err := rb.MarshalBinary()
 			if err != nil {
-				return [][]byte{},[][]byte{},err
+				return [][]byte{}, [][]byte{}, err
 			}
 
-			err = s.Put(indexKey, marshaledRB)
-			if err != nil {
-				return [][]byte{},[][]byte{},err
-			}
+			arrKeys = append(arrKeys, indexKey)
+			arrValues = append(arrValues, marshaledRB)
+
 		}
 
 	}
-
-	return nil
+	return arrKeys, arrValues, nil
 }
