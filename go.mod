@@ -20,6 +20,7 @@ require (
 	github.com/juju/errors v0.0.0-20190930114154-d42613fe1ab9 // indirect
 	github.com/juju/loggo v0.0.0-20190526231331-6e530bcce5d8 // indirect
 	github.com/juju/testing v0.0.0-20191001232224-ce9dec17d28b // indirect
+	github.com/mattheath/base62 v0.0.0-20150408093626-b80cdc656a7a // indirect
 	github.com/myesui/uuid v1.0.0 // indirect
 	github.com/onsi/ginkgo v1.11.0 // indirect
 	github.com/onsi/gomega v1.8.1 // indirect
