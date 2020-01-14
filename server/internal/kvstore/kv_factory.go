@@ -1,6 +1,7 @@
 package kvstore
 
 import (
+	"db-arch/server/internal/kvstore/badgerdb"
 	"db-arch/server/internal/kvstore/tikvdb"
 	"db-arch/server/io"
 )

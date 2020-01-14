@@ -5,6 +5,7 @@ import (
 	"db-arch/server/io"
 	"encoding/binary"
 	"encoding/json"
+	"fmt"
 
 	"github.com/RoaringBitmap/roaring"
 )
@@ -56,9 +57,12 @@ func GetDBIdentifier(s io.Store, dbname []byte) ([]byte, error) {
 		return []byte{}, def.DB_NAME_EMPTY
 	}
 	val, err := s.Get([]byte(def.META_DB + string(dbname)))
+	fmt.Println("here 59")
 	if err != nil {
 		return []byte{}, err
 	}
+	fmt.Println("here 63 val:", len(val))
+	fmt.Println("value:", string(val))
 	//if len(val) is zero, generate a new identifier
 	if len(val) == 0 {
 		identifier, err := GenerateDBIdentifier(s, dbname)

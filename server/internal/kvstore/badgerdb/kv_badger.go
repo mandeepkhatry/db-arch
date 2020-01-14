@@ -3,6 +3,7 @@ package badgerdb
 import (
 	"bytes"
 	"db-arch/server/internal/def"
+	"fmt"
 	"log"
 	"os"
 	"path/filepath"
@@ -48,6 +49,8 @@ func (s *StoreClient) CloseClient() error {
 
 //Put inserts key,val to badgerDB
 func (s *StoreClient) Put(key []byte, value []byte) error {
+	fmt.Println("[[Put]] key ", string(key))
+	fmt.Println("[[Put]] Value ", string(value))
 	if len(key) == 0 {
 		return def.KEY_EMPTY
 	}
@@ -87,19 +90,23 @@ func (s *StoreClient) PutBatch(keys [][]byte, values [][]byte) error {
 
 //Get reads value for given key
 func (s *StoreClient) Get(key []byte) ([]byte, error) {
+	fmt.Println("[[Get]] key ", string(key))
+
 	if len(key) == 0 {
 		return []byte{}, def.KEY_EMPTY
 	}
 
 	value := make([]byte, 0)
-
 	err := s.DB.View(func(txn *badger.Txn) error {
+
 		item, err := txn.Get(key)
-		if err != nil {
+		if err == badger.ErrKeyNotFound {
+			return nil
+		} else if err != nil {
 			return err
 		}
-
 		val, err := item.ValueCopy(nil)
+		fmt.Println("[[Get]] value is: ", string(val))
 		if err != nil {
 			return err
 		}
@@ -107,9 +114,11 @@ func (s *StoreClient) Get(key []byte) ([]byte, error) {
 		return nil
 
 	})
+
 	if err != nil {
 		return []byte{}, err
 	}
+
 	return value, nil
 }
 
@@ -123,6 +132,7 @@ func (s *StoreClient) GetBatch(keys [][]byte) ([][]byte, error) {
 	for i := 0; i < len(keys); i++ {
 		err := s.DB.View(func(txn *badger.Txn) error {
 			item, err := txn.Get(keys[i])
+
 			if err != nil {
 				return err
 			}
@@ -201,6 +211,7 @@ func (s *StoreClient) DeleteKeyRange(startKey []byte, endKey []byte) error {
 	if err != nil {
 		return err
 	}
+	return nil
 
 }
 

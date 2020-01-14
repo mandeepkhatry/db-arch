@@ -105,7 +105,7 @@ func (*server) QueryTransfer(ctx context.Context, req *query.QueryTransferReques
 
 func main() {
 	//create a new TiKV store from factory
-	store = kvstore.NewTiKVFactory([]string{"127.0.0.1:2379"})
+	store = kvstore.NewBadgerFactory([]string{}, "./data/badger")
 
 	//read your env file and load them into ENV for this process
 	err := godotenv.Load()
