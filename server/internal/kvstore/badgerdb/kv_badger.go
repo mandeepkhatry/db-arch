@@ -201,6 +201,7 @@ func (s *StoreClient) DeleteKeyRange(startKey []byte, endKey []byte) error {
 	if err != nil {
 		return err
 	}
+	return nil
 
 }
 

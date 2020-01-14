@@ -10,15 +10,13 @@ import (
 	"db-arch/server/io"
 	"encoding/json"
 	"fmt"
-	"log"
-	"net"
-	"os"
-
-	"google.golang.org/grpc/status"
-
 	"github.com/joho/godotenv"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
+	"google.golang.org/grpc/status"
+	"log"
+	"net"
+	"os"
 )
 
 //create Store interface
@@ -105,7 +103,7 @@ func (*server) QueryTransfer(ctx context.Context, req *query.QueryTransferReques
 
 func main() {
 	//create a new TiKV store from factory
-	store = kvstore.NewTiKVFactory([]string{"127.0.0.1:2379"})
+	store = kvstore.NewTiKVFactory([]string{"127.0.0.1:2379"}, "")
 
 	//read your env file and load them into ENV for this process
 	err := godotenv.Load()
