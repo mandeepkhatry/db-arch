@@ -19,12 +19,7 @@ import (
 	"github.com/joho/godotenv"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
-	"google.golang.org/grpc/status"
 )
-
-func init() {
-
-}
 
 //create Store interface
 var store io.Store

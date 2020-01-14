@@ -16,7 +16,7 @@ type StoreClient struct {
 }
 
 //NewClient creates a new tikvdb.RawKVClient
-func (s *StoreClient) NewClient(pdAddr []string) error {
+func (s *StoreClient) NewClient(pdAddr []string, dbDIR string) error {
 	cli, err := tikv.NewRawKVClient([]string(pdAddr), config.Security{})
 	if err != nil {
 		return err
