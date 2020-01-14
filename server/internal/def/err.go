@@ -6,6 +6,7 @@ Package def defines constants, error messages and their status codes
 
 import (
 	"errors"
+
 	"google.golang.org/grpc/codes"
 )
 
@@ -31,10 +32,10 @@ var ERRTYPE = map[error]codes.Code{
 	COLLECTION_NAME_EMPTY:       codes.InvalidArgument,
 	COLLECTION_IDENTIFIER_EMPTY: codes.InvalidArgument,
 	NAMESPACE_IDENTIFIER_EMPTY:  codes.InvalidArgument,
+	NAMES_CANNOT_BE_EMPTY:       codes.InvalidArgument,
 	KEY_EMPTY:                   codes.InvalidArgument,
 	EMPTY_KEY_CANNOT_BE_DELETED: codes.InvalidArgument,
 	START_KEY_UNKNOWN:           codes.InvalidArgument,
 	START_OR_END_KEY_EMPTY:      codes.InvalidArgument,
-	NAMES_CANNOT_BE_EMPTY:       codes.InvalidArgument,
 	IDENTIFIER_NOT_FOUND:        codes.NotFound,
 }

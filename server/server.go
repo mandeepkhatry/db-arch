@@ -14,6 +14,8 @@ import (
 	"net"
 	"os"
 
+	"google.golang.org/grpc/status"
+
 	"github.com/joho/godotenv"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
@@ -82,7 +84,6 @@ func (*server) QueryTransfer(ctx context.Context, req *query.QueryTransferReques
 	resultArray, err := engine.SearchDocument(store, database, collection, namespace, queryData)
 
 	if err != nil {
-
 		statusCode := def.ERRTYPE[err]
 		return &query.QueryTransferResponse{}, status.Error(statusCode, err.Error())
 	}
