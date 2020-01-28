@@ -1,0 +1,180 @@
+//Grammar to parse queries 
+
+{
+    package parser
+    import (
+        "encoding/json"
+        "reflect"
+        "db-arch/server/internal/parser/postfix"
+        )
+
+    type Query struct{
+        Collection string 
+        Condition []string 
+    }
+
+    func ParseQuery(){
+        if len(os.Args)!=2{
+            log.Fatal("Usage sql 'EXPR'")
+        }
+        
+        opts:=Memoize(true)
+        got,err:=ParseReader("",strings.NewReader(os.Args[1]),opts)
+        if err!=nil{
+            log.Fatal(err)
+        }
+
+      fmt.Println("parsed---> ",got.(Query))
+      query:=got.(Query)
+      pfx:=postfix.InfixToPostfix(query.Condition)
+      fmt.Println("postfix exp-->",pfx)
+
+    }
+
+    func toIfaceSlice(v interface{}) []interface{} {
+        if v == nil {
+            return nil
+        }
+        return v.([]interface{})
+    }
+    
+    func joinInterface(j []interface{})string{
+        m:=""
+        for _,v:=range j{
+            m+=fmt.Sprintf("%s",v)
+        }
+        return m
+    }
+}
+
+PARSE <- query:QUERY EOF{
+    return query,nil 
+}
+
+
+QUERY <- "@"collectionName:GETCOLLECTION _ condition:GETCONDITION{
+    fmt.Println("[[QUERY]] conditions:-->",condition)
+    return Query{
+        Collection: collectionName.(string),
+        Condition: condition.([]string),
+    },nil 
+}
+
+
+GETCOLLECTION <- [a-zA-Z0-9_\\-]+{
+    return string(c.text),nil 
+}
+
+GETCONDITION <- cf:SelectCondition _ cx:SelectConditionRest*{
+    cond:=[]string{}
+    cond=append(cond,cf.(string))
+    for _,v:=range cx.([]interface{}){
+        cond=append(cond,v.(string))
+    }
+
+    return cond,nil 
+}
+
+SelectCondition <- token:(LEFT_PARENTHESIS_TOKEN / AND_OPERATOR / OR_OPERATOR / NOT_OPERATOR / RIGHT_PARENTHESIS_TOKEN / PARSECONDITION){
+    
+    conditionStr:=""
+    switch v:=token.(type){
+        case []uint8:
+            tmpStr:=""
+            for _,val:=range v{  
+                tmpStr+=string(val)
+            }
+            conditionStr=tmpStr
+
+        case []interface{}:
+            tmpStr:=""
+            for _,val:=range v{
+               for _,val2:=range val.([]interface{}){
+                   tmpStr+=fmt.Sprintf("%s",val2)
+               }     
+            }
+
+            conditionStr=tmpStr
+        case string:
+            conditionStr=v 
+    }
+    fmt.Println("[[SelectCondition]]:",conditionStr)
+    return conditionStr,nil 
+}
+
+SelectConditionRest <- _ cx:SelectCondition{
+    return cx,nil 
+}
+
+
+PARSECONDITION <- fname:SelectFieldName _ op:SelectOperator _ fvalue:SelectFieldValue{
+    //fmt.Println("[[CONDITION]]",reflect.TypeOf(fname),reflect.TypeOf(op),reflect.TypeOf(fvalue))
+    
+    operatorStr:=""
+    switch v:=op.(type){
+        case []uint8:
+            tmpStr:=""
+            for _,val:=range v{
+                tmpStr+=string(val)
+            }
+            operatorStr=tmpStr
+        case string:
+            operatorStr=v
+    }
+
+    return fname.(string)+operatorStr+fvalue.(string),nil 
+}
+
+SelectFieldName <- [a-z_]+ {
+    return string(c.text),nil 
+}
+
+SelectOperator <- ">=" / "<=" / "!=" / ">" / "<" / "="{
+    return string(c.text),nil 
+} 
+
+
+SelectFieldValue <- f1:RetrieveFieldVal fx:RetrieveFieldRest*   {
+    //fmt.Println("[[selectfieldvalue]]",reflect.TypeOf(string(c.text)))
+    fieldVal:=f1.(string)
+    for _,v:=range fx.([]interface{}){
+        fieldVal+=v.(string)
+    }
+    return fieldVal,nil 
+}
+
+RetrieveFieldVal<-("\u0022" (_ ALPHA_NUM_TOKEN _)* "\u0022" / [0-9]+) {
+    return string(c.text),nil 
+}
+
+RetrieveFieldRest <- f:RetrieveFieldVal {
+    return f.(string),nil 
+}
+
+/* ---TOKENS HERE------- */
+
+ALPHA_NUM_TOKEN <- [a-zA-Z0-9,]
+LEFT_PARENTHESIS_TOKEN <- "("
+RIGHT_PARENTHESIS_TOKEN <- ")"
+AND_OPERATOR <- "AND"
+OR_OPERATOR <- "OR"
+NOT_OPERATOR <- "NOT"
+
+
+/*--------------------*/
+
+_ <- ( WhiteSpace / NewLine )*
+
+WhiteSpace "whitespace"
+  <- " "
+  / "\t"
+  / "\v"
+  / "\f"
+
+NewLine "newline" <- "\r\n"
+  / "\r"
+  / "\n"
+  / "\u2028"
+  / "\u2029"
+
+EOF <- !. 
