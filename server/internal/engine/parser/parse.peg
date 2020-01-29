@@ -140,7 +140,7 @@ SelectFieldValue <- f1:RetrieveFieldVal fx:RetrieveFieldRest*   {
     return fieldVal,nil 
 }
 
-RetrieveFieldVal<-("\u0022" (_ ALPHA_NUM_TOKEN _)* "\u0022" / [0-9]+) {
+RetrieveFieldVal<-("\u0022" (_ ALPHA_NUM_TOKEN _)* "\u0022" / [a-z0-9]+ / [0-9]+) {
     return string(c.text),nil 
 }
 
