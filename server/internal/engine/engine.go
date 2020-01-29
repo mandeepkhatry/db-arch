@@ -5,7 +5,6 @@ import (
 	"db-arch/server/io"
 	"encoding/binary"
 	"encoding/json"
-	"fmt"
 
 	"github.com/RoaringBitmap/roaring"
 )
@@ -22,13 +21,47 @@ A typical key consists of following parts:
 Total key size for a document will be 14 bytes.
 */
 
+type Engine struct {
+	DBName              string
+	DBID                []byte
+	Collection          string
+	CollectionID        []byte
+	Namespace           string
+	NamespaceIdentifier []byte
+	Session             map[string][]byte //session is used to check whether given d,c,n creds are correct
+}
+
+//TODO: verify
+//ConnectDB initializes engine with DBName, Namespace
+func (e *Engine) ConnectDB(s io.Store, dbname []byte, namespace []byte) error {
+
+	dbID, err := e.GetDBIdentifier(s, dbname)
+	if err != nil {
+		return err
+	}
+
+	e.Session[string(dbname)] = dbID
+	e.DBID = dbID
+
+	namespaceID, err := e.GetNamespaceIdentifier(s, namespace)
+	if err != nil {
+		return err
+	}
+
+	e.Session[string(namespace)] = namespaceID
+	e.NamespaceIdentifier = namespaceID
+
+	return nil
+}
+
+//TODO: verify
 //GenerateDBIdentifier return db identifier value and increase identifier by 1
-func GenerateDBIdentifier(s io.Store, dbname []byte) ([]byte, error) {
+func (e *Engine) GenerateDBIdentifier(s io.Store, dbname []byte) ([]byte, error) {
 	val, err := s.Get([]byte(def.META_DBIDENTIFIER))
 	if err != nil {
 		return []byte{}, err
 	}
-
+	//if there is no id present, generate a new one
 	if len(val) == 0 {
 		identifier := make([]byte, 2)
 
@@ -51,21 +84,20 @@ func GenerateDBIdentifier(s io.Store, dbname []byte) ([]byte, error) {
 	}
 }
 
+//TODO: verify
 //GetDBIdentifier returns identifier for given db
-func GetDBIdentifier(s io.Store, dbname []byte) ([]byte, error) {
+func (e *Engine) GetDBIdentifier(s io.Store, dbname []byte) ([]byte, error) {
 	if len(dbname) == 0 {
 		return []byte{}, def.DB_NAME_EMPTY
 	}
 	val, err := s.Get([]byte(def.META_DB + string(dbname)))
-	fmt.Println("here 59")
 	if err != nil {
 		return []byte{}, err
 	}
-	fmt.Println("here 63 val:", len(val))
-	fmt.Println("value:", string(val))
+
 	//if len(val) is zero, generate a new identifier
 	if len(val) == 0 {
-		identifier, err := GenerateDBIdentifier(s, dbname)
+		identifier, err := e.GenerateDBIdentifier(s, dbname)
 		if err != nil {
 			return []byte{}, err
 		}
@@ -89,8 +121,9 @@ func GetDBIdentifier(s io.Store, dbname []byte) ([]byte, error) {
 	}
 }
 
+//TODO: verify
 //GetDBName returns database name for given db identifier
-func GetDBName(s io.Store, dbIdentifier []byte) (string, error) {
+func (e *Engine) GetDBName(s io.Store, dbIdentifier []byte) (string, error) {
 	if len(dbIdentifier) == 0 {
 		return "", def.DB_IDENTIFIER_EMPTY
 	}
@@ -104,8 +137,9 @@ func GetDBName(s io.Store, dbIdentifier []byte) (string, error) {
 	return string(val), nil
 }
 
+//TODO: verify
 //GenerateCollectionIdentifier generate collection identifier and increases identifier by 1
-func GenerateCollectionIdentifier(s io.Store, collectionname []byte) ([]byte, error) {
+func (e *Engine) GenerateCollectionIdentifier(s io.Store, collectionname []byte) ([]byte, error) {
 	val, err := s.Get([]byte(def.META_COLLECTIONIDENTIFIER))
 	if err != nil {
 		return []byte{}, err
@@ -129,8 +163,9 @@ func GenerateCollectionIdentifier(s io.Store, collectionname []byte) ([]byte, er
 	}
 }
 
+//TODO: verify
 //GetCollectionIdentifier returns identifier for given collection
-func GetCollectionIdentifier(s io.Store, collection []byte) ([]byte, error) {
+func (e *Engine) GetCollectionIdentifier(s io.Store, collection []byte) ([]byte, error) {
 	if len(collection) == 0 {
 		return []byte{}, def.COLLECTION_NAME_EMPTY
 	}
@@ -140,7 +175,7 @@ func GetCollectionIdentifier(s io.Store, collection []byte) ([]byte, error) {
 	}
 	//if len(val) is zero, generate a new identifier
 	if len(val) == 0 {
-		identifier, err := GenerateCollectionIdentifier(s, collection)
+		identifier, err := e.GenerateCollectionIdentifier(s, collection)
 		if err != nil {
 			return []byte{}, err
 		}
@@ -164,8 +199,9 @@ func GetCollectionIdentifier(s io.Store, collection []byte) ([]byte, error) {
 	}
 }
 
+//TODO: verify
 //GetCollectionName returns collection name for given collection identifier
-func GetCollectionName(s io.Store, collectionIdentifier []byte) (string, error) {
+func (e *Engine) GetCollectionName(s io.Store, collectionIdentifier []byte) (string, error) {
 	if len(collectionIdentifier) == 0 {
 		return "", def.COLLECTION_IDENTIFIER_EMPTY
 	}
@@ -176,8 +212,9 @@ func GetCollectionName(s io.Store, collectionIdentifier []byte) (string, error) 
 	return string(val), nil
 }
 
+//TODO: verify
 //GenerateNamespaceIdentifier generates namespace identifier value and increases identifier by 1
-func GenerateNamespaceIdentifier(s io.Store, namespace []byte) ([]byte, error) {
+func (e *Engine) GenerateNamespaceIdentifier(s io.Store, namespace []byte) ([]byte, error) {
 	val, err := s.Get([]byte(def.META_NAMESPACEIDENTIFIER))
 	if err != nil {
 		return []byte{}, err
@@ -203,8 +240,9 @@ func GenerateNamespaceIdentifier(s io.Store, namespace []byte) ([]byte, error) {
 	}
 }
 
+//TODO: verify
 //GetNamespaceIdentifier returns identifier for given namespace
-func GetNamespaceIdentifier(s io.Store, namespace []byte) ([]byte, error) {
+func (e *Engine) GetNamespaceIdentifier(s io.Store, namespace []byte) ([]byte, error) {
 	if len(namespace) == 0 {
 		return []byte{}, def.COLLECTION_NAME_EMPTY
 	}
@@ -214,7 +252,7 @@ func GetNamespaceIdentifier(s io.Store, namespace []byte) ([]byte, error) {
 	}
 	//if len(val) is zero, generate a new identifier
 	if len(val) == 0 {
-		identifier, err := GenerateNamespaceIdentifier(s, namespace)
+		identifier, err := e.GenerateNamespaceIdentifier(s, namespace)
 		if err != nil {
 			return []byte{}, err
 		}
@@ -238,8 +276,9 @@ func GetNamespaceIdentifier(s io.Store, namespace []byte) ([]byte, error) {
 	}
 }
 
+//TODO: verify
 //GetNamespaceName return namespace name with given namespace identifier
-func GetNamespaceName(s io.Store, namespaceIdentifier []byte) (string, error) {
+func (e *Engine) GetNamespaceName(s io.Store, namespaceIdentifier []byte) (string, error) {
 	if len(namespaceIdentifier) == 0 {
 		return "", def.NAMESPACE_IDENTIFIER_EMPTY
 	}
@@ -250,8 +289,9 @@ func GetNamespaceName(s io.Store, namespaceIdentifier []byte) (string, error) {
 	return string(val), err
 }
 
+//TODO: verify
 //GenerateUniqueID generates a 4 byte unique_id
-func GenerateUniqueID(s io.Store, dbID []byte, collectionID []byte, namespaceID []byte) ([]byte, error) {
+func (e *Engine) GenerateUniqueID(s io.Store, dbID []byte, collectionID []byte, namespaceID []byte) ([]byte, error) {
 	//unixTimeStamp := getUnixTimestamp() //returns 4 byte UNIX timestamp
 	//macAddr := getMACAddress()          //returns 3 byte MAC Address
 	//processID := getProcessID()         //returns 2 byte ProcessID
@@ -290,22 +330,23 @@ func GenerateUniqueID(s io.Store, dbID []byte, collectionID []byte, namespaceID 
 	}
 }
 
+//TODO: verify
 //GetIdentifiers returns database, collection and namespace identifiers for respective names given
 //and generate new ones if they do not exist
-func GetIdentifiers(s io.Store, database string, collection string,
+func (e *Engine) GetIdentifiers(s io.Store, database string, collection string,
 	namespace string) ([]byte, []byte, []byte, error) {
 
-	dbID, err := GetDBIdentifier(s, []byte(database))
+	dbID, err := e.GetDBIdentifier(s, []byte(database))
 	if err != nil {
 		return []byte{}, []byte{}, []byte{}, err
 	}
 
-	collectionID, err := GetCollectionIdentifier(s, []byte(collection))
+	collectionID, err := e.GetCollectionIdentifier(s, []byte(collection))
 	if err != nil {
 		return []byte{}, []byte{}, []byte{}, err
 	}
 
-	namespaceID, err := GetNamespaceIdentifier(s, []byte(namespace))
+	namespaceID, err := e.GetNamespaceIdentifier(s, []byte(namespace))
 	if err != nil {
 		return []byte{}, []byte{}, []byte{}, err
 	}
@@ -313,8 +354,9 @@ func GetIdentifiers(s io.Store, database string, collection string,
 	return dbID, collectionID, namespaceID, nil
 }
 
+//TODO: verify
 //SearchIdentifiers retrieves db,collection,namespace identifiers only if they exist
-func SearchIdentifiers(s io.Store, dbname string, collection string,
+func (e *Engine) SearchIdentifiers(s io.Store, dbname string, collection string,
 	namespace string) ([]byte, []byte, []byte, error) {
 
 	dbID, err := s.Get([]byte(def.META_DB + string(dbname)))
@@ -335,8 +377,9 @@ func SearchIdentifiers(s io.Store, dbname string, collection string,
 	return dbID, collectionID, namespaceID, nil
 }
 
+//TODO: verify
 //InsertDocument retrieves identifiers and inserts document to database
-func InsertDocument(s io.Store, database string,
+func (e *Engine) InsertDocument(s io.Store, database string,
 	collection string, namespace string,
 	data map[string][]byte, indices []string) error {
 
@@ -349,13 +392,31 @@ func InsertDocument(s io.Store, database string,
 	valueCache := make([][]byte, 0)
 
 	//get database, collection,namespace identifiers
-	dbID, collectionID, namespaceID, err := GetIdentifiers(s, database, collection, namespace)
+	//dbID, collectionID, namespaceID, err := e.GetIdentifiers(s, database, collection, namespace)
+	//if err != nil {
+	//	return err
+	//}
+	var dbID []byte
+	if temp, ok := e.Session[database]; !ok {
+		return def.DB_DOES_NOT_EXIST
+	} else {
+		dbID = temp
+	}
+
+	var namespaceID []byte
+	if temp, ok := e.Session[namespace]; !ok {
+		return def.NAMESPACE_DOES_NOT_EXIST
+	} else {
+		namespaceID = temp
+	}
+
+	collectionID, err := e.GetCollectionIdentifier(s, []byte(collection))
 	if err != nil {
 		return err
 	}
 
 	//generate unique_id
-	uniqueID, err := GenerateUniqueID(s, dbID, collectionID, namespaceID)
+	uniqueID, err := e.GenerateUniqueID(s, dbID, collectionID, namespaceID)
 	if err != nil {
 		return err
 	}
@@ -376,7 +437,7 @@ func InsertDocument(s io.Store, database string,
 	keyCache = append(keyCache, key)
 	valueCache = append(valueCache, dataInBytes)
 	//indexer
-	indexKey, indexValue, err := IndexDocument(s, dbID, collectionID, namespaceID, uniqueID, data, indices)
+	indexKey, indexValue, err := e.IndexDocument(s, dbID, collectionID, namespaceID, uniqueID, data, indices)
 	if err != nil {
 		return err
 	}
@@ -393,8 +454,9 @@ func InsertDocument(s io.Store, database string,
 	return nil
 }
 
+//TODO:  verify
 //SearchDocument queries document for given query params
-func SearchDocument(s io.Store, database string, collection string,
+func (e *Engine) SearchDocument(s io.Store, database string, collection string,
 	namespace string, query map[string][]byte) ([][]byte, error) {
 
 	if len(database) == 0 || len(collection) == 0 || len(namespace) == 0 {
@@ -402,11 +464,32 @@ func SearchDocument(s io.Store, database string, collection string,
 	}
 
 	//get identifiers for given
-	dbID, collectionID, namespaceID, err := SearchIdentifiers(s, database, collection, namespace)
+	//dbID, collectionID, namespaceID, err := e.SearchIdentifiers(s, database, collection, namespace)
+	//if err != nil {
+	//	return [][]byte{}, err
+	//}
+
+	var dbID []byte
+	if temp, ok := e.Session[database]; !ok {
+		return [][]byte{}, def.DB_DOES_NOT_EXIST
+	} else {
+		dbID = temp
+	}
+
+	var namespaceID []byte
+	if temp, ok := e.Session[namespace]; !ok {
+		return [][]byte{}, def.NAMESPACE_DOES_NOT_EXIST
+	} else {
+		namespaceID = temp
+	}
+
+	//here if collection doesn't exist, do not create new one
+	collectionID, err := s.Get([]byte(def.META_COLLECTION + collection))
 	if err != nil {
 		return [][]byte{}, err
 	}
 
+	//collectionID check is required here
 	if len(dbID) == 0 || len(collectionID) == 0 || len(namespaceID) == 0 {
 		return [][]byte{}, def.IDENTIFIER_NOT_FOUND
 	}

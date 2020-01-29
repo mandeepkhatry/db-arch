@@ -11,11 +11,11 @@ import (
 	"github.com/dgraph-io/badger"
 )
 
+//StoreClient
 type StoreClient struct {
 	DB *badger.DB
 }
 
-//
 //NewClient creates a new db
 //takes placement driver address as arg
 func (s *StoreClient) NewClient(pdAddr []string, dbDIR string) error {

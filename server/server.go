@@ -10,17 +10,21 @@ import (
 	"db-arch/server/io"
 	"encoding/json"
 	"fmt"
+	"log"
+	"net"
+	"os"
+
 	"github.com/joho/godotenv"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 	"google.golang.org/grpc/status"
-	"log"
-	"net"
-	"os"
 )
 
 //create Store interface
 var store io.Store
+
+//Engine
+var eng engine.Engine
 
 //Server struct
 type server struct{}

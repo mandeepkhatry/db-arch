@@ -13,11 +13,14 @@ import (
 //ERROR MESSAGES
 var (
 	DB_NAME_EMPTY               error = errors.New("dbname empty")
+	DB_DOES_NOT_EXIST           error = errors.New("database doesn't exist")
 	DB_IDENTIFIER_EMPTY         error = errors.New("dbidentifier empty")
 	COLLECTION_NAME_EMPTY       error = errors.New("collection name empty")
 	COLLECTION_IDENTIFIER_EMPTY error = errors.New("collection identifier empty")
+	COLLECTION_DOES_NOT_EXIST   error = errors.New("collection doesn't exist")
 	NAMESPACE_IDENTIFIER_EMPTY  error = errors.New("namespace identifier empty")
 	NAMES_CANNOT_BE_EMPTY       error = errors.New("database/collection/namespace names can't be empty")
+	NAMESPACE_DOES_NOT_EXIST    error = errors.New("namespace doesn't exist")
 	KEY_EMPTY                   error = errors.New("key is empty")
 	EMPTY_KEY_CANNOT_BE_DELETED error = errors.New("can't delete empty key")
 	START_OR_END_KEY_EMPTY      error = errors.New("start or end key is empty")

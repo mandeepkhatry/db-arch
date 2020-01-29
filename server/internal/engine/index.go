@@ -8,8 +8,9 @@ import (
 	"github.com/RoaringBitmap/roaring"
 )
 
+//TODO: verify
 //IndexDocument indexes document in batch
-func IndexDocument(s io.Store, dbID []byte, collectionID []byte,
+func (e *Engine) IndexDocument(s io.Store, dbID []byte, collectionID []byte,
 	namespaceID []byte, uniqueID []byte,
 	data map[string][]byte, indices []string) ([][]byte, [][]byte, error) {
 
