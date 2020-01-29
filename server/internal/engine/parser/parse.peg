@@ -1,3 +1,4 @@
+ 
 //Grammar to parse queries 
 
 {
@@ -13,22 +14,19 @@
         Condition []string 
     }
 
-    func ParseQuery(){
-        if len(os.Args)!=2{
-            log.Fatal("Usage sql 'EXPR'")
-        }
+    func ParseQuery(raw_query string)(string,[]string,error){
         
         opts:=Memoize(true)
-        got,err:=ParseReader("",strings.NewReader(os.Args[1]),opts)
+        got,err:=Parse(raw_query, []byte{},opts)
         if err!=nil{
-            log.Fatal(err)
+            return "",[]string{},err
         }
 
       fmt.Println("parsed---> ",got.(Query))
       query:=got.(Query)
       pfx:=postfix.InfixToPostfix(query.Condition)
       fmt.Println("postfix exp-->",pfx)
-
+      return query.Collection,pfx,err
     }
 
     func toIfaceSlice(v interface{}) []interface{} {

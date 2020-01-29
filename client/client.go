@@ -38,9 +38,7 @@ func postDocument(c document.DocumentServiceClient) func(http.ResponseWriter, *h
 
 		//Document object
 		d := model.Document{
-			Database:   dataInterface["database"].(string),
 			Collection: dataInterface["collection"].(string),
-			Namespace:  dataInterface["namespace"].(string),
 			Data:       dataInterface["data"].(map[string]interface{}),
 			Indices:    dataInterface["indices"].([]interface{}),
 		}
@@ -116,6 +114,7 @@ func queryDocument(c query.QueryServiceClient) func(http.ResponseWriter, *http.R
 			for responseKey, responseValue := range res.GetResponse() {
 				eachKV := make(map[string]interface{})
 				for fieldName, fieldValue := range responseValue.GetResult() {
+					print("fieldname, fieldvalue : ", fieldName, fieldValue)
 					json.Unmarshal(fieldValue, &resultInterface)
 					eachKV[fieldName] = resultInterface
 				}
@@ -233,9 +232,7 @@ func sendDocument(c document.DocumentServiceClient, d model.Document) (*document
 	//Document Transfer Request
 	req := &document.DocumentTransferRequest{
 		Request: &document.Document{
-			Database:   d.Database,
 			Collection: d.Collection,
-			Namespace:  d.Namespace,
 			Data:       newData,
 			Indices:    indices,
 		},
@@ -273,7 +270,7 @@ func sendQuery(c query.QueryServiceClient, d model.Query) (*query.QueryTransferR
 //unary API call to send connection to server.go
 func sendConnection(c connection.ConnectionServiceClient, d model.Connection) (*connection.ConnectionTransferResponse, error) {
 	fmt.Println("-----------------Establishing Connection-------------")
-
+	fmt.Println("DB N : ", d.Database, d.Namespace)
 	//Connection Transfer Request
 	req := &connection.ConnectionTransferRequest{
 		Request: &connection.Connection{

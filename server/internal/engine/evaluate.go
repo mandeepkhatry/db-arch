@@ -15,7 +15,7 @@ var operators = map[string]bool{
 //TODO add corresponding function to each operator ("AND, "OR", "NOT")
 var execute = map[string]func(string, string) string{
 	"AND": func(op1, op2 string) string {
-		op1result := OpeartorBasedSearch(field, operator, value)
+
 		return op1 + op2 + " anding "
 	},
 	"OR": func(op1, op2 string) string {
