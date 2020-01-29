@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"db-arch/model"
+	"db-arch/pb/connection"
 	"db-arch/pb/document"
 	"db-arch/pb/query"
 	"encoding/json"
@@ -83,12 +84,8 @@ func queryDocument(c query.QueryServiceClient) func(http.ResponseWriter, *http.R
 			panic(err)
 		}
 
-		//Document object
 		d := model.Query{
-			Database:   dataInterface["database"].(string),
-			Collection: dataInterface["collection"].(string),
-			Namespace:  dataInterface["namespace"].(string),
-			Querydata:  dataInterface["data"].(map[string]interface{}),
+			Query: dataInterface["query"].(string),
 		}
 
 		res, err := sendQuery(c, d)
@@ -139,6 +136,40 @@ func queryDocument(c query.QueryServiceClient) func(http.ResponseWriter, *http.R
 		return
 	}
 }
+
+func connectDatabase(c connection.ConnectionServiceClient) func(http.ResponseWriter, *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		dataInterface := make(map[string]interface{})
+
+		err := json.NewDecoder(r.Body).Decode(&dataInterface)
+
+		if err != nil {
+			panic(err)
+		}
+
+		d := model.Connection{
+			Database:  dataInterface["database"].(string),
+			Namespace: dataInterface["namespace"].(string),
+		}
+		res, err := sendConnection(c, d)
+
+		response := make(map[string]string)
+		if err != nil {
+			response["connection_status"] = "failed to establish connection"
+			w.Header().Add("Content-Type", "application/json")
+			w.WriteHeader(200)
+			json.NewEncoder(w).Encode(response)
+			return
+		}
+
+		response["connection_status"] = res.GetResponse()
+		w.Header().Add("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(response)
+		return
+
+	}
+}
+
 func main() {
 	//read your env file and load them into ENV for this process
 	err := godotenv.Load()
@@ -158,6 +189,8 @@ func main() {
 
 	c2 := query.NewQueryServiceClient(conn)
 
+	c3 := connection.NewConnectionServiceClient(conn)
+
 	if err != nil {
 		log.Fatalf("Client couldn't connect to server %v", err)
 		panic(err)
@@ -172,6 +205,7 @@ func main() {
 	fmt.Println("-------------------Starting client-------------------")
 	router.HandleFunc("/documents", postDocument(c1)).Methods("POST")
 	router.HandleFunc("/query", queryDocument(c2)).Methods("POST")
+	router.HandleFunc("/connection", connectDatabase(c3)).Methods("POST")
 	http.ListenAndServe(":8000", router)
 
 }
@@ -220,24 +254,10 @@ func sendDocument(c document.DocumentServiceClient, d model.Document) (*document
 func sendQuery(c query.QueryServiceClient, d model.Query) (*query.QueryTransferResponse, error) {
 	fmt.Println("----------------Sending Query-------------------")
 
-	newData := make(map[string][]byte)
-
-	for k, v := range d.Querydata {
-
-		bytedata, err := json.Marshal(v)
-		if err != nil {
-			panic(err)
-		}
-		newData[k] = bytedata
-	}
-
 	//Document Transfer Request
 	req := &query.QueryTransferRequest{
 		Request: &query.Query{
-			Database:   d.Database,
-			Collection: d.Collection,
-			Namespace:  d.Namespace,
-			Querydata:  newData,
+			Query: d.Query,
 		},
 	}
 	res, err := c.QueryTransfer(context.Background(), req)
@@ -246,6 +266,29 @@ func sendQuery(c query.QueryServiceClient, d model.Query) (*query.QueryTransferR
 	}
 
 	fmt.Println("----------------QUERY RESPONSE----------------")
-	//fmt.Println(res)
+	fmt.Println("Query recieved : ", res)
 	return res, nil
+}
+
+//unary API call to send connection to server.go
+func sendConnection(c connection.ConnectionServiceClient, d model.Connection) (*connection.ConnectionTransferResponse, error) {
+	fmt.Println("-----------------Establishing Connection-------------")
+
+	//Connection Transfer Request
+	req := &connection.ConnectionTransferRequest{
+		Request: &connection.Connection{
+			Database:  d.Database,
+			Namespace: d.Namespace,
+		},
+	}
+
+	res, err := c.ConnectionTransfer(context.Background(), req)
+	if err != nil {
+		return res, err
+	}
+
+	fmt.Println("----------CONNECTION RESPONSE------------")
+	fmt.Println("Connection recieved : ", res)
+	return res, nil
+
 }

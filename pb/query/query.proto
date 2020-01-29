@@ -4,10 +4,7 @@ package pb;
 option go_package = "query";
 
 message Query{
-    string database = 1;
-    string collection = 2;
-    string namespace = 3;
-    map<string, bytes> querydata = 4;
+    string query = 1;
 }
 
 message Response {
