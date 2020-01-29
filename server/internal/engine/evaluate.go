@@ -1,7 +1,9 @@
 package engine
 
 import (
+	"db-arch/server/internal/def"
 	"db-arch/server/internal/engine/stack"
+	"db-arch/server/io"
 	"fmt"
 	"regexp"
 	"strings"
@@ -15,22 +17,13 @@ var operators = map[string]bool{
 	"NOT": true,
 }
 
-var arithmeticOperators = map[string]bool{
-	"=":  true,
-	">=": true,
-	"<=": true,
-	">":  true,
-	"<":  true,
-	"!=": true,
-}
-
 //TODO add corresponding function to each operator ("AND, "OR", "NOT")
-var execute = map[string]func(roaring.Bitmap, roaring.Bitmap) roaring.Bitmap{
-	"AND": func(rb1, rb2 roaring.Bitmap) roaring.Bitmap {
-		return roaring.FastAnd(rb1, rb2)
+var execute = map[string]func(*roaring.Bitmap, *roaring.Bitmap) roaring.Bitmap{
+	"AND": func(rb1, rb2 *roaring.Bitmap) roaring.Bitmap {
+		return *roaring.FastAnd(rb1, rb2)
 	},
-	"OR": func(rb1, rb2 roaring.Bitmap) roaring.Bitmap {
-		return roaring.FastOr(rb1, rb2)
+	"OR": func(rb1, rb2 *roaring.Bitmap) roaring.Bitmap {
+		return *roaring.FastOr(rb1, rb2)
 	},
 	//TODO: implement NOT
 	//"NOT IN": func(rb1, rb2 roaring.Bitmap) roaring.Bitmap {
@@ -38,29 +31,45 @@ var execute = map[string]func(roaring.Bitmap, roaring.Bitmap) roaring.Bitmap{
 	//},
 }
 
-var arthmeticExecution = map[string]func(string, string, []byte) roaring.Bitmap{
-	"=": func(fieldName string, typeOfData string, byteOrderedValue []byte) roaring.Bitmap {
+var arthmeticExecution = map[string]func(io.Store, string, string, []byte,[]byte,[]byte,[]byte) (roaring.Bitmap,error){
+	"=": func(s io.Store, fieldName string, fieldType string, byteOrderedValue []byte,
+		dbID []byte,namespaceID []byte,collectionID []byte) (roaring.Bitmap,error) {
+
+		rb := roaring.New()
+
+		indexKey := []byte(def.INDEX_KEY + string(dbID) + ":" + string(collectionID) + ":" + string(namespaceID) + ":" + fieldName + ":" + fieldType + ":" + string(byteOrderedValue)
+
+		uniqueIDBitmapArray,err:=s.Get(indexKey)
+		if len(uniqueIDBitmapArray)==0 || err!=nil{
+			return roaring.Bitmap{},err
+		}
+
 
 	},
-	">": func(fieldName string, typeOfData string, byteOrderedValue []byte) roaring.Bitmap {
+	">": func(s io.Store, fieldName string, fieldType string, byteOrderedValue []byte,
+		dbID []byte,namespaceID []byte,collectionID []byte) (roaring.Bitmap,error) {
 
 	},
-	"<": func(fieldName string, typeOfData string, byteOrderedValue []byte) roaring.Bitmap {
+	"<": func(s io.Store, fieldName string, fieldType string, byteOrderedValue []byte,
+		dbID []byte,namespaceID []byte,collectionID []byte) (roaring.Bitmap,error) {
 
 	},
-	">=": func(fieldName string, typeOfData string, byteOrderedValue []byte) roaring.Bitmap {
+	">=": func(s io.Store, fieldName string,fieldType string, byteOrderedValue []byte,
+		dbID []byte,namespaceID []byte,collectionID []byte) (roaring.Bitmap,error) {
 
 	},
-	"<=": func(fieldName string, typeOfData string, byteOrderedValue []byte) roaring.Bitmap {
+	"<=": func(s io.Store, fieldName string, fieldType string, byteOrderedValue []byte,
+		dbID []byte,namespaceID []byte,collectionID []byte) (roaring.Bitmap,error) {
 
 	},
-	"!=": func(fieldName string, typeOfData string, byteOrderedValue []byte) roaring.Bitmap {
+	"!=": func(s io.Store, fieldName string, fieldType string, byteOrderedValue []byte,
+		dbID []byte,namespaceID []byte,collectionID []byte) (roaring.Bitmap,error) {
 
 	},
 }
 
 //EvaluatePostFix evaluates postfix expression returns result
-func EvaluatePostFix(px []string) interface{} {
+func (e *Engine) EvaluatePostFix(s io.Store, px []string,collectionID []byte)(interface{},error) {
 	var tempStack stack.Stack
 	for _, v := range px {
 		if _, ok := operators[v]; !ok {
@@ -68,8 +77,9 @@ func EvaluatePostFix(px []string) interface{} {
 		} else {
 			exp1 := tempStack.Pop().(string)
 			exp2 := tempStack.Pop().(string)
-			rb1 := EvaluateExpression(exp1)
-			rb2 := EvaluateExpression(exp2)
+			//TODO: handle here
+			rb1,err := e.EvaluateExpression(s,exp1,collectionID)
+			rb2,err := e.EvaluateExpression(s,exp2,collectionID)
 			tempStack.Push(execute[v](rb1, rb2))
 		}
 	}
@@ -77,26 +87,29 @@ func EvaluatePostFix(px []string) interface{} {
 }
 
 //EvaluateExpression takes in expression and returns roaring bitmap as result
-func EvaluateExpression(exp string) roaring.Bitmap {
+func (e *Engine) EvaluateExpression(s io.Store,exp string,collectionID []byte) (roaring.Bitmap,error) {
 	/*
 		1. Parse expression to find fieldname, operator, fieldvalue, fieldtype
 		2. Based on operator, carry out operations
 	*/
 
 	//parse fieldname,operator,fieldvalue
-	fieldname, operator, fieldvalue := ParseExpressionFields(exp)
+	fieldname, operator, fieldvalue := parseExpressionFields(exp)
 	//get fieldtype with ordered value
 	typeOfData, byteOrderedData := findTypeOfValue(fieldvalue) //TODO: implement this
 
-	rb := arthmeticExecution[operator](fieldname, typeOfData, byteOrderedData)
-	return rb
+	rb,err := arthmeticExecution[operator](s,fieldname, typeOfData, byteOrderedData,e.DBID,e.NamespaceIdentifier,collectionID)
+	if err!=nil{
+		return roaring.Bitmap{},err
+	}
+	return rb,nil
 }
 
-func ParseExpressionFields(exp string) (string, string, string) {
+func parseExpressionFields(exp string) (string, string, string) {
 	re := regexp.MustCompile(`(!=|>=|>|<=|<|=)`)
 	operator := re.Find([]byte(exp)) //get first operator that is matched
 	strArr := strings.Split(exp, string(operator))
-	return strArr[0], string(operator), strings.Trim(strArr[1], '"')
+	return strArr[0], string(operator), strings.Trim(strArr[1], "\"")
 }
 
 func findTypeOfValue(fieldvalue string) (string, []byte) {
