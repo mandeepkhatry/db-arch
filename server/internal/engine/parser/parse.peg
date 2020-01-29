@@ -5,7 +5,7 @@
     import (
         "encoding/json"
         "reflect"
-        "db-arch/server/internal/parser/postfix"
+        "db-arch/server/internal/engine/parser/postfix"
         )
 
     type Query struct{

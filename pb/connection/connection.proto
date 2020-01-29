@@ -1,0 +1,21 @@
+syntax = "proto3";
+package pb;
+
+option go_package = "connection";
+
+message Connection{
+    string database = 1;
+    string namespace = 2;
+}
+
+message ConnectionTransferRequest{
+    Connection request = 1;
+}
+
+message ConnectionTransferResponse{
+    string response = 1;
+}
+
+service ConnectionService{
+    rpc ConnectionTransfer(ConnectionTransferRequest) returns (ConnectionTransferResponse){};
+}

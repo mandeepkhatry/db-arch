@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"db-arch/pb/connection"
 	"db-arch/pb/document"
 	"db-arch/pb/query"
 	"db-arch/server/internal/def"
@@ -72,13 +73,13 @@ func (*server) DocumentTransfer(ctx context.Context, req *document.DocumentTrans
 func (*server) QueryTransfer(ctx context.Context, req *query.QueryTransferRequest) (*query.QueryTransferResponse, error) {
 	fmt.Println("-----Got Query as Request-----")
 
-	database := req.GetRequest().GetDatabase()
-	collection := req.GetRequest().GetCollection()
-	namespace := req.GetRequest().GetNamespace()
-	//data in form of bytes
-	queryData := req.GetRequest().GetQuerydata()
+	rawQuery := req.GetRequest().GetQuery()
+	print("Recieved raw query :", rawQuery)
 
-	resultArray, err := engine.SearchDocument(store, database, collection, namespace, queryData)
+	//TODO parser peg : convert raw query to postfix expression pass to engine, call for query function
+
+	parsedQuery := make([]string, 0)
+	resultArray, err := engine.SearchDocument(store, parsedQuery)
 
 	if err != nil {
 		statusCode := def.ERRTYPE[err]
@@ -105,6 +106,19 @@ func (*server) QueryTransfer(ctx context.Context, req *query.QueryTransferReques
 	return res, nil
 }
 
+func (*server) ConnectionTransfer(ctx context.Context, req *connection.ConnectionTransferRequest) (*connection.ConnectionTransferResponse, error) {
+	fmt.Println("--------Establishing connection--------")
+	database := req.GetRequest().GetDatabase()
+	namespace := req.GetRequest().GetNamespace()
+	print(database, namespace)
+
+	//TODO engine construct
+
+	res := &connection.ConnectionTransferResponse{
+		Response: "connection established with " + database + ":" + namespace,
+	}
+	return res, nil
+}
 func main() {
 	//create a new badger store from factory
 	store = kvstore.NewBadgerFactory([]string{}, "./data/badger")
@@ -136,6 +150,7 @@ func main() {
 	s := grpc.NewServer()
 	document.RegisterDocumentServiceServer(s, &server{})
 	query.RegisterQueryServiceServer(s, &server{})
+	connection.RegisterConnectionServiceServer(s, &server{})
 
 	reflection.Register(s)
 
