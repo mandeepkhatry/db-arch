@@ -456,10 +456,9 @@ func (e *Engine) InsertDocument(s io.Store, database string,
 
 //TODO:  verify
 //SearchDocument queries document for given query params
-func (e *Engine) SearchDocument(s io.Store, database string, collection string,
-	namespace string, query map[string][]byte) ([][]byte, error) {
+func (e *Engine) SearchDocument(s io.Store, collection string, query []string) ([][]byte, error) {
 
-	if len(database) == 0 || len(collection) == 0 || len(namespace) == 0 {
+	if len(collection) == 0 {
 		return [][]byte{}, def.NAMES_CANNOT_BE_EMPTY
 	}
 
@@ -470,14 +469,14 @@ func (e *Engine) SearchDocument(s io.Store, database string, collection string,
 	//}
 
 	var dbID []byte
-	if temp, ok := e.Session[database]; !ok {
+	if temp, ok := e.Session[e.DBName]; !ok {
 		return [][]byte{}, def.DB_DOES_NOT_EXIST
 	} else {
 		dbID = temp
 	}
 
 	var namespaceID []byte
-	if temp, ok := e.Session[namespace]; !ok {
+	if temp, ok := e.Session[e.Namespace]; !ok {
 		return [][]byte{}, def.NAMESPACE_DOES_NOT_EXIST
 	} else {
 		namespaceID = temp
@@ -494,6 +493,7 @@ func (e *Engine) SearchDocument(s io.Store, database string, collection string,
 		return [][]byte{}, def.IDENTIFIER_NOT_FOUND
 	}
 
+	//TODO: break logic from here
 	//find typeOfData  and get byteOrderedData
 	typeOfData, byteOrderedData := findTypeOfData(query)
 

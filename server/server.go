@@ -7,6 +7,7 @@ import (
 	"db-arch/pb/query"
 	"db-arch/server/internal/def"
 	"db-arch/server/internal/engine"
+	"db-arch/server/internal/engine/parser"
 	"db-arch/server/internal/kvstore"
 	"db-arch/server/io"
 	"encoding/json"
@@ -14,6 +15,8 @@ import (
 	"log"
 	"net"
 	"os"
+
+	"google.golang.org/grpc/codes"
 
 	"github.com/joho/godotenv"
 	"google.golang.org/grpc"
@@ -58,7 +61,7 @@ func (*server) DocumentTransfer(ctx context.Context, req *document.DocumentTrans
 		Type Specific data	typeSpecificData	map[string][]byte  <- INDEXING PURPOSE
 	*/
 
-	err := engine.InsertDocument(store, database, collection, namespace, data, indices)
+	err := eng.InsertDocument(store, database, collection, namespace, data, indices)
 	if err != nil {
 		statusCode := def.ERRTYPE[err]
 		return &document.DocumentTransferResponse{
@@ -77,9 +80,12 @@ func (*server) QueryTransfer(ctx context.Context, req *query.QueryTransferReques
 	print("Recieved raw query :", rawQuery)
 
 	//TODO parser peg : convert raw query to postfix expression pass to engine, call for query function
+	collection, parsedQuery, err := parser.ParseQuery(rawQuery)
+	if err != nil {
+		return &query.QueryTransferResponse{}, status.Error(codes.Internal, err.Error())
+	}
 
-	parsedQuery := make([]string, 0)
-	resultArray, err := engine.SearchDocument(store, parsedQuery)
+	resultArray, err := eng.SearchDocument(store, collection, parsedQuery)
 
 	if err != nil {
 		statusCode := def.ERRTYPE[err]
@@ -113,6 +119,11 @@ func (*server) ConnectionTransfer(ctx context.Context, req *connection.Connectio
 	print(database, namespace)
 
 	//TODO engine construct
+	store = kvstore.NewBadgerFactory([]string{}, "./data/badger")
+	err := eng.ConnectDB(store, []byte(database), []byte(namespace))
+	if err != nil {
+		return &connection.ConnectionTransferResponse{}, status.Error(codes.Aborted, err.Error())
+	}
 
 	res := &connection.ConnectionTransferResponse{
 		Response: "connection established with " + database + ":" + namespace,
@@ -121,7 +132,7 @@ func (*server) ConnectionTransfer(ctx context.Context, req *connection.Connectio
 }
 func main() {
 	//create a new badger store from factory
-	store = kvstore.NewBadgerFactory([]string{}, "./data/badger")
+	//store = kvstore.NewBadgerFactory([]string{}, "./data/badger")
 
 	//create tikv
 	// store=kvstore.NewTiKVFactory([]string{"addr here"},"")
