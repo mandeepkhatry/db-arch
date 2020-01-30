@@ -4,9 +4,7 @@ package pb;
 option go_package = "document";
 
 message Document{
-    string database = 1;
     string collection = 2;
-    string namespace = 3;
     map<string, bytes> data = 4;
     repeated string indices = 5;
 }

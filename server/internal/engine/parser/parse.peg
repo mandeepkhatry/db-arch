@@ -1,3 +1,4 @@
+ 
 //Grammar to parse queries 
 
 {
@@ -16,7 +17,7 @@
     func ParseQuery(raw_query string)(string,[]string,error){
         
         opts:=Memoize(true)
-        got,err:=Parse(raw_query,opts)
+        got,err:=Parse(raw_query, []byte{},opts)
         if err!=nil{
             return "",[]string{},err
         }

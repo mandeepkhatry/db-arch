@@ -5,8 +5,6 @@ import (
 	"db-arch/server/io"
 	"encoding/binary"
 	"encoding/json"
-
-	"github.com/RoaringBitmap/roaring"
 )
 
 /*
@@ -22,23 +20,26 @@ Total key size for a document will be 14 bytes.
 */
 
 type Engine struct {
-	DBName              string
-	DBID                []byte
-	Collection          string
-	CollectionID        []byte
-	Namespace           string
-	NamespaceIdentifier []byte
-	Session             map[string][]byte //session is used to check whether given d,c,n creds are correct
+	DBName      string
+	DBID        []byte
+	Namespace   string
+	NamespaceID []byte
+	Session     map[string][]byte //session is used to check whether given d,c,n creds are correct
 }
 
 //TODO: verify
 //ConnectDB initializes engine with DBName, Namespace
-func (e *Engine) ConnectDB(s io.Store, dbname []byte, namespace []byte) error {
+func (e *Engine) ConnectDB(s io.Store) error {
+
+	dbname := []byte(e.DBName)
+	namespace := []byte(e.Namespace)
 
 	dbID, err := e.GetDBIdentifier(s, dbname)
 	if err != nil {
 		return err
 	}
+
+	e.Session = make(map[string][]byte)
 
 	e.Session[string(dbname)] = dbID
 	e.DBID = dbID
@@ -49,7 +50,7 @@ func (e *Engine) ConnectDB(s io.Store, dbname []byte, namespace []byte) error {
 	}
 
 	e.Session[string(namespace)] = namespaceID
-	e.NamespaceIdentifier = namespaceID
+	e.NamespaceID = namespaceID
 
 	return nil
 }
@@ -379,11 +380,11 @@ func (e *Engine) SearchIdentifiers(s io.Store, dbname string, collection string,
 
 //TODO: verify
 //InsertDocument retrieves identifiers and inserts document to database
-func (e *Engine) InsertDocument(s io.Store, database string,
-	collection string, namespace string,
+func (e *Engine) InsertDocument(s io.Store,
+	collection string,
 	data map[string][]byte, indices []string) error {
 
-	if len(database) == 0 || len(collection) == 0 || len(namespace) == 0 {
+	if len(e.DBName) == 0 || len(collection) == 0 || len(e.Namespace) == 0 {
 		return def.NAMES_CANNOT_BE_EMPTY
 	}
 
@@ -394,35 +395,31 @@ func (e *Engine) InsertDocument(s io.Store, database string,
 	//get database, collection,namespace identifiers
 	//dbID, collectionID, namespaceID, err := e.GetIdentifiers(s, database, collection, namespace)
 	//if err != nil {
-	//	return err
+	//urn err
 	//}
-	var dbID []byte
-	if temp, ok := e.Session[database]; !ok {
+
+	if _, ok := e.Session[e.DBName]; !ok {
 		return def.DB_DOES_NOT_EXIST
-	} else {
-		dbID = temp
 	}
 
-	var namespaceID []byte
-	if temp, ok := e.Session[namespace]; !ok {
+	if _, ok := e.Session[e.Namespace]; !ok {
 		return def.NAMESPACE_DOES_NOT_EXIST
-	} else {
-		namespaceID = temp
 	}
 
 	collectionID, err := e.GetCollectionIdentifier(s, []byte(collection))
+
 	if err != nil {
 		return err
 	}
 
 	//generate unique_id
-	uniqueID, err := e.GenerateUniqueID(s, dbID, collectionID, namespaceID)
+	uniqueID, err := e.GenerateUniqueID(s, e.DBID, collectionID, e.NamespaceID)
 	if err != nil {
 		return err
 	}
 	//generate key
 
-	key := []byte(string(dbID) + ":" + string(collectionID) + ":" + string(namespaceID) + ":" + string(uniqueID))
+	key := []byte(string(e.DBID) + ":" + string(collectionID) + ":" + string(e.NamespaceID) + ":" + string(uniqueID))
 
 	dataInBytes, err := json.Marshal(data)
 	if err != nil {
@@ -437,7 +434,7 @@ func (e *Engine) InsertDocument(s io.Store, database string,
 	keyCache = append(keyCache, key)
 	valueCache = append(valueCache, dataInBytes)
 	//indexer
-	indexKey, indexValue, err := e.IndexDocument(s, dbID, collectionID, namespaceID, uniqueID, data, indices)
+	indexKey, indexValue, err := e.IndexDocument(s, e.DBID, collectionID, e.NamespaceID, uniqueID, data, indices)
 	if err != nil {
 		return err
 	}
@@ -456,9 +453,10 @@ func (e *Engine) InsertDocument(s io.Store, database string,
 
 //TODO:  verify
 //SearchDocument queries document for given query params
-func (e *Engine) SearchDocument(s io.Store, collection string, query []string) ([][]byte, error) {
+func (e *Engine) SearchDocument(s io.Store, collection string,
+	query []string) ([][]byte, error) {
 
-	if len(collection) == 0 {
+	if len(e.DBName) == 0 || len(collection) == 0 || len(e.Namespace) == 0 {
 		return [][]byte{}, def.NAMES_CANNOT_BE_EMPTY
 	}
 
@@ -468,18 +466,12 @@ func (e *Engine) SearchDocument(s io.Store, collection string, query []string) (
 	//	return [][]byte{}, err
 	//}
 
-	var dbID []byte
-	if temp, ok := e.Session[e.DBName]; !ok {
+	if _, ok := e.Session[e.DBName]; !ok {
 		return [][]byte{}, def.DB_DOES_NOT_EXIST
-	} else {
-		dbID = temp
 	}
 
-	var namespaceID []byte
-	if temp, ok := e.Session[e.Namespace]; !ok {
+	if _, ok := e.Session[e.Namespace]; !ok {
 		return [][]byte{}, def.NAMESPACE_DOES_NOT_EXIST
-	} else {
-		namespaceID = temp
 	}
 
 	//here if collection doesn't exist, do not create new one
@@ -489,67 +481,69 @@ func (e *Engine) SearchDocument(s io.Store, collection string, query []string) (
 	}
 
 	//collectionID check is required here
-	if len(dbID) == 0 || len(collectionID) == 0 || len(namespaceID) == 0 {
+	if len(e.DBID) == 0 || len(collectionID) == 0 || len(e.DBID) == 0 {
 		return [][]byte{}, def.IDENTIFIER_NOT_FOUND
 	}
 
-	//TODO: break logic from here
-	//find typeOfData  and get byteOrderedData
-	typeOfData, byteOrderedData := findTypeOfData(query)
+	// //find typeOfData  and get byteOrderedData
+	// typeOfData, byteOrderedData := findTypeOfData(query)
 
-	rb := roaring.New()
+	// rb := roaring.New()
 
-	for fieldName, fieldType := range typeOfData {
+	// for fieldName, fieldType := range typeOfData {
 
-		//generate indexKey
-		indexKey := []byte(def.INDEX_KEY + string(dbID) + ":" + string(collectionID) + ":" + string(namespaceID) + ":" + fieldName + ":" + fieldType + ":" + string(byteOrderedData[fieldName]))
+	// 	//generate indexKey
+	// 	indexKey := []byte(def.INDEX_KEY + string(dbID) + ":" + string(collectionID) + ":" + string(namespaceID) + ":" + fieldName + ":" + fieldType + ":" + string(byteOrderedData[fieldName]))
 
-		uniqueIDBitmapArray, err := s.Get(indexKey)
-		if len(uniqueIDBitmapArray) == 0 || err != nil {
-			return [][]byte{}, err
-		}
+	// 	uniqueIDBitmapArray, err := s.Get(indexKey)
+	// 	if len(uniqueIDBitmapArray) == 0 || err != nil {
+	// 		return [][]byte{}, err
+	// 	}
 
-		if rb.IsEmpty() == true {
+	// 	if rb.IsEmpty() == true {
 
-			err := rb.UnmarshalBinary(uniqueIDBitmapArray)
+	// 		err := rb.UnmarshalBinary(uniqueIDBitmapArray)
 
-			if err != nil {
-				return [][]byte{}, nil
+	// 		if err != nil {
+	// 			return [][]byte{}, nil
 
-			}
-		} else {
+	// 		}
+	// 	} else {
 
-			tmp := roaring.New()
-			err := tmp.UnmarshalBinary(uniqueIDBitmapArray)
-			if err != nil {
-				return [][]byte{}, err
-			}
-			rb = roaring.FastAnd(rb, tmp) //fast AND two bitmaps
-		}
+	// 		tmp := roaring.New()
+	// 		err := tmp.UnmarshalBinary(uniqueIDBitmapArray)
+	// 		if err != nil {
+	// 			return [][]byte{}, err
+	// 		}
+	// 		rb = roaring.FastAnd(rb, tmp) //fast AND two bitmaps
+	// 	}
 
-	}
+	// }
 
-	if rb.IsEmpty() == true {
-		return [][]byte{}, nil
-	}
+	// if rb.IsEmpty() == true {
+	// 	return [][]byte{}, nil
+	// }
 
-	//retrieve document keys for search
-	searchKeys := make([][]byte, 0)
-	searchKeyLength := len(rb.ToArray())
-	uniqueIDArr := rb.ToArray() //get all IDs
+	// //retrieve document keys for search
+	// searchKeys := make([][]byte, 0)
+	// searchKeyLength := len(rb.ToArray())
+	// uniqueIDArr := rb.ToArray() //get all IDs
 
-	//get all documents keys
-	for i := 0; i < searchKeyLength; i++ {
-		uniqueIDByte := make([]byte, 4)
-		binary.LittleEndian.PutUint32(uniqueIDByte, uniqueIDArr[i])
-		documentKeys := []byte(string(dbID) + ":" + string(collectionID) + ":" + string(namespaceID) + ":" + string(uniqueIDByte))
-		searchKeys = append(searchKeys, documentKeys)
-	}
+	// //get all documents keys
+	// for i := 0; i < searchKeyLength; i++ {
+	// 	uniqueIDByte := make([]byte, 4)
+	// 	binary.LittleEndian.PutUint32(uniqueIDByte, uniqueIDArr[i])
+	// 	documentKeys := []byte(string(dbID) + ":" + string(collectionID) + ":" + string(namespaceID) + ":" + string(uniqueIDByte))
+	// 	searchKeys = append(searchKeys, documentKeys)
+	// }
 
-	resultArr, err := s.GetBatch(searchKeys)
-	if err != nil {
-		return [][]byte{}, err
-	}
+	// resultArr, err := s.GetBatch(searchKeys)
+	// if err != nil {
+	// 	return [][]byte{}, err
+	// }
+
+	//REMOVE THIS JUST FOR TEST
+	resultArr := make([][]byte, 0)
 
 	return resultArr, nil
 }

@@ -8,7 +8,6 @@ import (
 	"db-arch/server/internal/def"
 	"db-arch/server/internal/engine"
 	"db-arch/server/internal/engine/parser"
-	"db-arch/server/internal/kvstore"
 	"db-arch/server/io"
 	"encoding/json"
 	"fmt"
@@ -20,6 +19,7 @@ import (
 
 	"github.com/joho/godotenv"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/reflection"
 	"google.golang.org/grpc/status"
 )
@@ -37,9 +37,16 @@ type server struct{}
 func (*server) DocumentTransfer(ctx context.Context, req *document.DocumentTransferRequest) (*document.DocumentTransferResponse, error) {
 	fmt.Println("-----Got Document as Request-----")
 
-	database := req.GetRequest().GetDatabase()
+	if eng.DBName == "" {
+		//Response to client
+		res := &document.DocumentTransferResponse{
+			Response: "connect to database",
+		}
+		return res, def.CONNECTION_NOT_ESTABLISHED
+	}
+
 	collection := req.GetRequest().GetCollection()
-	namespace := req.GetRequest().GetNamespace()
+
 	//data in form of bytes
 	data := req.GetRequest().GetData()
 	indices := req.GetRequest().GetIndices()
@@ -61,7 +68,7 @@ func (*server) DocumentTransfer(ctx context.Context, req *document.DocumentTrans
 		Type Specific data	typeSpecificData	map[string][]byte  <- INDEXING PURPOSE
 	*/
 
-	err := eng.InsertDocument(store, database, collection, namespace, data, indices)
+	err := eng.InsertDocument(store, collection, data, indices)
 	if err != nil {
 		statusCode := def.ERRTYPE[err]
 		return &document.DocumentTransferResponse{
@@ -76,16 +83,24 @@ func (*server) DocumentTransfer(ctx context.Context, req *document.DocumentTrans
 func (*server) QueryTransfer(ctx context.Context, req *query.QueryTransferRequest) (*query.QueryTransferResponse, error) {
 	fmt.Println("-----Got Query as Request-----")
 
+	if eng.DBName == "" {
+		//Response to client
+		res := &query.QueryTransferResponse{}
+		return res, def.CONNECTION_NOT_ESTABLISHED
+	}
+
 	rawQuery := req.GetRequest().GetQuery()
 	print("Recieved raw query :", rawQuery)
 
-	//TODO parser peg : convert raw query to postfix expression pass to engine, call for query function
-	collection, parsedQuery, err := parser.ParseQuery(rawQuery)
+	collection, postfixQuery, err := parser.ParseQuery(rawQuery)
+
 	if err != nil {
-		return &query.QueryTransferResponse{}, status.Error(codes.Internal, err.Error())
+		res := &query.QueryTransferResponse{}
+		return res, err
 	}
 
-	resultArray, err := eng.SearchDocument(store, collection, parsedQuery)
+	//TODO SearchDocumet contains code of evalation from postfixQuery
+	resultArray, err := eng.SearchDocument(store, collection, postfixQuery)
 
 	if err != nil {
 		statusCode := def.ERRTYPE[err]
@@ -116,11 +131,12 @@ func (*server) ConnectionTransfer(ctx context.Context, req *connection.Connectio
 	fmt.Println("--------Establishing connection--------")
 	database := req.GetRequest().GetDatabase()
 	namespace := req.GetRequest().GetNamespace()
-	print(database, namespace)
+	print("DATABASE , NAMESPACE : ", database, namespace)
 
-	//TODO engine construct
-	store = kvstore.NewBadgerFactory([]string{}, "./data/badger")
-	err := eng.ConnectDB(store, []byte(database), []byte(namespace))
+	eng.DBName = database
+	eng.Namespace = namespace
+	print("----------ConnectDB function calling-----------")
+	err := eng.ConnectDB(store)
 	if err != nil {
 		return &connection.ConnectionTransferResponse{}, status.Error(codes.Aborted, err.Error())
 	}
