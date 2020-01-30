@@ -8,13 +8,14 @@ import (
 	"db-arch/server/internal/def"
 	"db-arch/server/internal/engine"
 	"db-arch/server/internal/engine/parser"
-	"db-arch/server/internal/kvstore"
 	"db-arch/server/io"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net"
 	"os"
+
+	"google.golang.org/grpc/codes"
 
 	"github.com/joho/godotenv"
 	"google.golang.org/grpc"
@@ -147,7 +148,7 @@ func (*server) ConnectionTransfer(ctx context.Context, req *connection.Connectio
 }
 func main() {
 	//create a new badger store from factory
-	store = kvstore.NewBadgerFactory([]string{}, "./data/badger")
+	//store = kvstore.NewBadgerFactory([]string{}, "./data/badger")
 
 	//create tikv
 	// store=kvstore.NewTiKVFactory([]string{"addr here"},"")
