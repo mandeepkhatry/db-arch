@@ -2,11 +2,14 @@ package engine
 
 import (
 	"db-arch/server/internal/def"
+	"db-arch/server/internal/engine/marshal"
 	"db-arch/server/internal/engine/stack"
 	"db-arch/server/io"
 	"fmt"
 	"regexp"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/RoaringBitmap/roaring"
 )
@@ -43,28 +46,38 @@ var arthmeticExecution = map[string]func(io.Store, string, string, []byte,[]byte
 		if len(uniqueIDBitmapArray)==0 || err!=nil{
 			return roaring.Bitmap{},err
 		}
-
-
+		err=rb.UnmarshalBinary(uniqueIDBitmapArray)
+		if err!=nil{
+			return roaring.Bitmap{},err
+		}
+		return *rb,nil
 	},
 	">": func(s io.Store, fieldName string, fieldType string, byteOrderedValue []byte,
 		dbID []byte,namespaceID []byte,collectionID []byte) (roaring.Bitmap,error) {
-
+		return roaring.Bitmap{},nil
 	},
 	"<": func(s io.Store, fieldName string, fieldType string, byteOrderedValue []byte,
 		dbID []byte,namespaceID []byte,collectionID []byte) (roaring.Bitmap,error) {
+
+			return roaring.Bitmap{},nil
 
 	},
 	">=": func(s io.Store, fieldName string,fieldType string, byteOrderedValue []byte,
 		dbID []byte,namespaceID []byte,collectionID []byte) (roaring.Bitmap,error) {
 
+			return roaring.Bitmap{},nil
+
 	},
 	"<=": func(s io.Store, fieldName string, fieldType string, byteOrderedValue []byte,
 		dbID []byte,namespaceID []byte,collectionID []byte) (roaring.Bitmap,error) {
+
+		return roaring.Bitmap{},nil
 
 	},
 	"!=": func(s io.Store, fieldName string, fieldType string, byteOrderedValue []byte,
 		dbID []byte,namespaceID []byte,collectionID []byte) (roaring.Bitmap,error) {
 
+			return roaring.Bitmap{},nil
 	},
 }
 
@@ -96,7 +109,7 @@ func (e *Engine) EvaluateExpression(s io.Store,exp string,collectionID []byte) (
 	//parse fieldname,operator,fieldvalue
 	fieldname, operator, fieldvalue := parseExpressionFields(exp)
 	//get fieldtype with ordered value
-	typeOfData, byteOrderedData := findTypeOfValue(fieldvalue) //TODO: implement this
+	typeOfData, byteOrderedData := findTypeOfValue(fieldvalue)
 
 	rb,err := arthmeticExecution[operator](s,fieldname, typeOfData, byteOrderedData,e.DBID,e.NamespaceIdentifier,collectionID)
 	if err!=nil{
@@ -112,8 +125,23 @@ func parseExpressionFields(exp string) (string, string, string) {
 	return strArr[0], string(operator), strings.Trim(strArr[1], "\"")
 }
 
-func findTypeOfValue(fieldvalue string) (string, []byte) {
-	dataType := fmt.Sprintf("%T", fieldvalue)
-	//TODO: someone implement this please :D
-
+func findTypeOfValue(value string) (string, []byte) {
+	if strings.Contains(value, "'") || strings.Contains(value, "\"") {
+		return "string",marshal.TypeMarshal("string",value)
+	} else if valid.IsInt(value) {
+		val,_:=strconv.Atoi(value)
+		return "int",marshal.TypeMarshal("int",val)
+	} else if valid.IsFloat(value) {
+		val,_:=strconv.ParseFloat(value,64)
+		return "float",marshal.TypeMarshal("float",val)
+	} else if value == "true" || value == "false" {
+		val,_:=strconv.ParseBool(value)
+		return "bool",marshal.TypeMarshal("bool",val)
+	} else {
+		time, _ := time.Parse(time.RFC3339, value)
+		if time.String() != "0001-01-01 00:00:00 +0000 UTC" {
+			return "datetime",marshal.TypeMarshal("datetime",time)
+		}
+	}
+	return "new_data_type",[]byte{}
 }
