@@ -4,6 +4,7 @@ go 1.13
 
 require (
 	github.com/RoaringBitmap/roaring v0.4.21
+	github.com/araddon/dateparse v0.0.0-20190622164848-0fb0a474d195
 	github.com/asaskevich/govalidator v0.0.0-20200108200545-475eaeb16496
 	github.com/coreos/go-semver v0.3.0 // indirect
 	github.com/dgraph-io/badger v1.6.0

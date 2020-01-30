@@ -18,7 +18,7 @@ func TypeMarshal(typeOfData string, valueInterface interface{}) []byte {
 	if typeOfData == "int" {
 		return marshalInt(valueInterface)
 
-	} else if typeOfData == "float" {
+	} else if typeOfData == "float" || typeOfData == "float32" || typeOfData == "float64" {
 		return marshalFloat(valueInterface)
 
 	} else if typeOfData == "string" {

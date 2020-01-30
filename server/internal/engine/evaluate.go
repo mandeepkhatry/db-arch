@@ -2,11 +2,11 @@ package engine
 
 import (
 	"db-arch/server/internal/def"
+	"db-arch/server/internal/engine/formatter"
 	"db-arch/server/internal/engine/marshal"
 	"db-arch/server/internal/engine/stack"
 	"db-arch/server/io"
 	"fmt"
-	"reflect"
 	"regexp"
 	"strings"
 
@@ -100,6 +100,7 @@ var arthmeticExecution = map[string]func(io.Store, string, string, []byte, []byt
 //EvaluatePostFix evaluates postfix expression returns result
 func (e *Engine) EvaluatePostFix(s io.Store, px []string, collectionID []byte) (interface{}, error) {
 	var tempStack stack.Stack
+
 	for _, v := range px {
 		if _, ok := operators[v]; !ok {
 			tempStack.Push(v)
@@ -120,6 +121,7 @@ func (e *Engine) EvaluatePostFix(s io.Store, px []string, collectionID []byte) (
 			tempStack.Push(execute[v](&rb1, &rb2))
 		}
 	}
+
 	return tempStack.Pop(), nil
 }
 
@@ -135,7 +137,7 @@ func (e *Engine) EvaluateExpression(s io.Store, exp string, collectionID []byte)
 	//get fieldtype with ordered value
 	typeOfData, byteOrderedData := findTypeOfValue(fieldvalue)
 	fmt.Println("[[evaluate.go]]typeOfData,byteorderedData:", typeOfData, byteOrderedData)
-	fmt.Println("[[evaluate.go]]131]", e.DBID, e.NamespaceID, collectionID)
+	fmt.Println("[[evaluate.go]]:131", e.DBID, e.NamespaceID, collectionID)
 	rb, err := arthmeticExecution[operator](s, fieldname, typeOfData, byteOrderedData, e.DBID, e.NamespaceID, collectionID)
 	if err != nil {
 		return roaring.Bitmap{}, err
@@ -147,12 +149,20 @@ func parseExpressionFields(exp string) (string, string, string) {
 	re := regexp.MustCompile(`(!=|>=|>|<=|<|=)`)
 	operator := re.Find([]byte(exp)) //get first operator that is matched
 	strArr := strings.Split(exp, string(operator))
-	return strArr[0], string(operator), strings.Trim(strArr[1], "\"")
+	return strArr[0], string(operator), (strArr[1])
 }
 
 func findTypeOfValue(value string) (string, []byte) {
-	fmt.Println("[[evaluate.go]] findTypeOfValue:", reflect.TypeOf(value))
-	return "word", marshal.TypeMarshal("string", value)
+	fmt.Println("VALUE is ", value)
+	datatype, formattedData, err := formatter.FormatData(value)
+	fmt.Println("DATATYPE : ", datatype)
+	if err != nil {
+		panic(err)
+	}
+
+	specificDataType := def.ApplicationSpecificType[datatype]
+
+	return specificDataType, marshal.TypeMarshal(datatype, formattedData)
 
 	//if strings.Contains(value, "'") || strings.Contains(value, "\"") {
 	//	fmt.Println("[[evaluate.go]]findtypeofvalue-string:", value)
