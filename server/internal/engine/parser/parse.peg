@@ -17,7 +17,7 @@
     func ParseQuery(raw_query string)(string,[]string,error){
         
         opts:=Memoize(true)
-        got,err:=Parse(raw_query, []byte{},opts)
+        got,err:=Parse("",[]byte(raw_query),opts)
         if err!=nil{
             return "",[]string{},err
         }

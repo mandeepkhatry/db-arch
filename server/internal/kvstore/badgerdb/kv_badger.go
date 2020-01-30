@@ -95,22 +95,23 @@ func (s *StoreClient) Get(key []byte) ([]byte, error) {
 	if len(key) == 0 {
 		return []byte{}, def.KEY_EMPTY
 	}
-
+	fmt.Println("[[GET]]s.DB", s.DB)
 	value := make([]byte, 0)
 	err := s.DB.View(func(txn *badger.Txn) error {
 
 		item, err := txn.Get(key)
+
 		if err == badger.ErrKeyNotFound {
 			return nil
 		} else if err != nil {
 			return err
 		}
 		val, err := item.ValueCopy(nil)
-		fmt.Println("[[Get]] value is: ", string(val))
 		if err != nil {
 			return err
 		}
 		value = val
+
 		return nil
 
 	})
@@ -119,6 +120,7 @@ func (s *StoreClient) Get(key []byte) ([]byte, error) {
 		return []byte{}, err
 	}
 
+	fmt.Println("[GET] value:", value)
 	return value, nil
 }
 

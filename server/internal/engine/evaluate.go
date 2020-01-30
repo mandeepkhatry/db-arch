@@ -5,13 +5,12 @@ import (
 	"db-arch/server/internal/engine/marshal"
 	"db-arch/server/internal/engine/stack"
 	"db-arch/server/io"
+	"fmt"
+	"reflect"
 	"regexp"
-	"strconv"
 	"strings"
-	"time"
 
 	"github.com/RoaringBitmap/roaring"
-	valid "github.com/asaskevich/govalidator"
 )
 
 var operators = map[string]bool{
@@ -39,19 +38,24 @@ var arthmeticExecution = map[string]func(io.Store, string, string, []byte, []byt
 
 	"=": func(s io.Store, fieldName string, fieldType string, byteOrderedValue []byte,
 		dbID []byte, namespaceID []byte, collectionID []byte) (roaring.Bitmap, error) {
-
+		fmt.Println("[[evaluate.go/arthemticExecution]]")
 		rb := roaring.New()
 
+		fmt.Println("[[evaluate.go]]/44]", dbID, collectionID, namespaceID)
 		indexKey := []byte(def.INDEX_KEY + string(dbID) + ":" + string(collectionID) + ":" + string(namespaceID) + ":" + fieldName + ":" + fieldType + ":" + string(byteOrderedValue))
 
 		uniqueIDBitmapArray, err := s.Get(indexKey)
+		fmt.Println("[[evaluate.go/uniqueIDBitmapArray]]", uniqueIDBitmapArray)
 		if len(uniqueIDBitmapArray) == 0 || err != nil {
 			return roaring.Bitmap{}, err
 		}
 		err = rb.UnmarshalBinary(uniqueIDBitmapArray)
+		fmt.Println("[[evaluate.go/rb]]", rb)
+
 		if err != nil {
 			return roaring.Bitmap{}, err
 		}
+		fmt.Println("[[evaluate.go/rb]],rb")
 		return *rb, nil
 	},
 
@@ -125,7 +129,8 @@ func (e *Engine) EvaluateExpression(s io.Store, exp string, collectionID []byte)
 	fieldname, operator, fieldvalue := parseExpressionFields(exp)
 	//get fieldtype with ordered value
 	typeOfData, byteOrderedData := findTypeOfValue(fieldvalue)
-
+	fmt.Println("[[evaluate.go]]typeOfData,byteorderedData:", typeOfData, byteOrderedData)
+	fmt.Println("[[evaluate.go]]131]", e.DBID, e.NamespaceID, collectionID)
 	rb, err := arthmeticExecution[operator](s, fieldname, typeOfData, byteOrderedData, e.DBID, e.NamespaceID, collectionID)
 	if err != nil {
 		return roaring.Bitmap{}, err
@@ -141,22 +146,31 @@ func parseExpressionFields(exp string) (string, string, string) {
 }
 
 func findTypeOfValue(value string) (string, []byte) {
-	if strings.Contains(value, "'") || strings.Contains(value, "\"") {
-		return "string", marshal.TypeMarshal("string", value)
-	} else if valid.IsInt(value) {
-		val, _ := strconv.Atoi(value)
-		return "int", marshal.TypeMarshal("int", val)
-	} else if valid.IsFloat(value) {
-		val, _ := strconv.ParseFloat(value, 64)
-		return "float", marshal.TypeMarshal("float", val)
-	} else if value == "true" || value == "false" {
-		val, _ := strconv.ParseBool(value)
-		return "bool", marshal.TypeMarshal("bool", val)
-	} else {
-		time, _ := time.Parse(time.RFC3339, value)
-		if time.String() != "0001-01-01 00:00:00 +0000 UTC" {
-			return "datetime", marshal.TypeMarshal("datetime", time)
-		}
-	}
-	return "new_data_type", []byte{}
+	fmt.Println("[[evaluate.go]] findTypeOfValue:", reflect.TypeOf(value))
+	return "word", marshal.TypeMarshal("string", value)
+
+	//if strings.Contains(value, "'") || strings.Contains(value, "\"") {
+	//	fmt.Println("[[evaluate.go]]findtypeofvalue-string:", value)
+	//	return "string", marshal.TypeMarshal("string", value)
+	//} else if valid.IsInt(value) {
+	//	val, err := strconv.Atoi(value)
+	//	fmt.Println("[[evaluate.go]]err-int:", err)
+	//	fmt.Println("[[evaluate.go]]findtypeofvalue-int:", val)
+	//
+	//	return "int", marshal.TypeMarshal("int", val)
+	//} else if valid.IsFloat(value) {
+	//	val, _ := strconv.ParseFloat(value, 64)
+	//	fmt.Println("[[evaluate.go]]findtypeofvalue-float:", val)
+	//
+	//	return "float", marshal.TypeMarshal("float", val)
+	//} else if value == "true" || value == "false" {
+	//	val, _ := strconv.ParseBool(value)
+	//	return "bool", marshal.TypeMarshal("bool", val)
+	//} else {
+	//	time, _ := time.Parse(time.RFC3339, value)
+	//	if time.String() != "0001-01-01 00:00:00 +0000 UTC" {
+	//		return "datetime", marshal.TypeMarshal("datetime", time)
+	//	}
+	//}
+	//return "new_data_type", []byte{}
 }

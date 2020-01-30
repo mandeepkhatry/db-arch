@@ -4,15 +4,15 @@ import (
 	"db-arch/server/internal/def"
 	"db-arch/server/io"
 	"encoding/binary"
+	"fmt"
 
 	"github.com/RoaringBitmap/roaring"
 )
 
 //TODO: verify
 //IndexDocument indexes document in batch
-func (e *Engine) IndexDocument(s io.Store, dbID []byte, collectionID []byte,
-	namespaceID []byte, uniqueID []byte,
-	data map[string][]byte, indices []string) ([][]byte, [][]byte, error) {
+func (e *Engine) IndexDocument(s io.Store, collectionID []byte,
+	uniqueID []byte, data map[string][]byte, indices []string) ([][]byte, [][]byte, error) {
 
 	typeOfData, newData := findTypeOfData(data)
 	/*
@@ -29,6 +29,7 @@ func (e *Engine) IndexDocument(s io.Store, dbID []byte, collectionID []byte,
 
 	//convert uniqueID into uint32
 	num := binary.LittleEndian.Uint32(uniqueID)
+	fmt.Println("[[index.go]]uniqueID in int32:", num)
 	arrKeys := make([][]byte, 0)
 	arrValues := make([][]byte, 0)
 
@@ -39,7 +40,7 @@ func (e *Engine) IndexDocument(s io.Store, dbID []byte, collectionID []byte,
 		fieldValue := newData[fieldToIndex]
 
 		//generate index key
-		indexKey := []byte(def.INDEX_KEY + string(dbID) + ":" + string(collectionID) + ":" + string(namespaceID) + ":" + fieldToIndex + ":" + typeOfData[fieldToIndex] + ":" + string(fieldValue))
+		indexKey := []byte(def.INDEX_KEY + string(e.DBID) + ":" + string(collectionID) + ":" + string(e.NamespaceID) + ":" + fieldToIndex + ":" + typeOfData[fieldToIndex] + ":" + string(fieldValue))
 
 		//get value for that index key
 		val, err := s.Get(indexKey)
@@ -59,10 +60,12 @@ func (e *Engine) IndexDocument(s io.Store, dbID []byte, collectionID []byte,
 			rb := roaring.BitmapOf(tmpArr...)
 			marshaledRB, err := rb.MarshalBinary()
 			//add to DB
-			err = s.Put(indexKey, marshaledRB)
+			//err = s.Put(indexKey, marshaledRB)
 			if err != nil {
 				return [][]byte{}, [][]byte{}, err
 			}
+			arrKeys = append(arrKeys, indexKey)
+			arrValues = append(arrValues, marshaledRB)
 		} else {
 
 			rb := roaring.BitmapOf(num)
@@ -77,5 +80,7 @@ func (e *Engine) IndexDocument(s io.Store, dbID []byte, collectionID []byte,
 		}
 
 	}
+	fmt.Println("[[index.go]]arrKeys:", arrKeys)
+	fmt.Println("[[index.go]]arrValues:", arrValues)
 	return arrKeys, arrValues, nil
 }

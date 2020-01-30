@@ -5,6 +5,7 @@ import (
 	"db-arch/server/io"
 	"encoding/binary"
 	"encoding/json"
+	"fmt"
 
 	"github.com/RoaringBitmap/roaring"
 )
@@ -294,7 +295,7 @@ func (e *Engine) GetNamespaceName(s io.Store, namespaceIdentifier []byte) (strin
 
 //TODO: verify
 //GenerateUniqueID generates a 4 byte unique_id
-func (e *Engine) GenerateUniqueID(s io.Store, dbID []byte, collectionID []byte, namespaceID []byte) ([]byte, error) {
+func (e *Engine) GenerateUniqueID(s io.Store, collectionID []byte) ([]byte, error) {
 	//unixTimeStamp := getUnixTimestamp() //returns 4 byte UNIX timestamp
 	//macAddr := getMACAddress()          //returns 3 byte MAC Address
 	//processID := getProcessID()         //returns 2 byte ProcessID
@@ -304,7 +305,7 @@ func (e *Engine) GenerateUniqueID(s io.Store, dbID []byte, collectionID []byte, 
 	//uniqueID = append(uniqueID, counter...)
 
 	//key format: _uniqueid:dbid:colid:namespaceid=idcounter
-	idKey := []byte(def.UNIQUE_ID + string(dbID) + ":" + string(collectionID) + ":" + string(namespaceID))
+	idKey := []byte(def.UNIQUE_ID + string(e.DBID) + ":" + string(collectionID) + ":" + string(e.NamespaceID))
 	idCounterInBytes, err := s.Get(idKey)
 	if err != nil {
 		return []byte{}, err
@@ -416,12 +417,12 @@ func (e *Engine) InsertDocument(s io.Store,
 	}
 
 	//generate unique_id
-	uniqueID, err := e.GenerateUniqueID(s, e.DBID, collectionID, e.NamespaceID)
+	uniqueID, err := e.GenerateUniqueID(s, collectionID)
 	if err != nil {
 		return err
 	}
 	//generate key
-
+	fmt.Println("[[engine.go/uniqueID]]", uniqueID)
 	key := []byte(string(e.DBID) + ":" + string(collectionID) + ":" + string(e.NamespaceID) + ":" + string(uniqueID))
 
 	dataInBytes, err := json.Marshal(data)
@@ -437,7 +438,7 @@ func (e *Engine) InsertDocument(s io.Store,
 	keyCache = append(keyCache, key)
 	valueCache = append(valueCache, dataInBytes)
 	//indexer
-	indexKey, indexValue, err := e.IndexDocument(s, e.DBID, collectionID, e.NamespaceID, uniqueID, data, indices)
+	indexKey, indexValue, err := e.IndexDocument(s, collectionID, uniqueID, data, indices)
 	if err != nil {
 		return err
 	}
@@ -530,24 +531,7 @@ func (e *Engine) SearchDocument(s io.Store, collection string,
 
 	*/
 
-	rb, err := e.EvaluatePostFix(s, query, collectionID)
-	if err != nil {
-		return [][]byte{}, err
-	}
-	resultRoaring := rb.(roaring.Bitmap)
-	//retrieve document keys for search
-	searchKeys := make([][]byte, 0)
-	searchKeyLength := len(resultRoaring.ToArray())
-	uniqueIDArr := resultRoaring.ToArray() //get all IDs
-
-	//get all documents keys
-	for i := 0; i < searchKeyLength; i++ {
-		uniqueIDByte := make([]byte, 4)
-		binary.LittleEndian.PutUint32(uniqueIDByte, uniqueIDArr[i])
-		documentKeys := []byte(string(e.DBID) + ":" + string(collectionID) + ":" + string(e.NamespaceID) + ":" + string(uniqueIDByte))
-		searchKeys = append(searchKeys, documentKeys)
-	}
-
+	fmt.Println("[[engine.go]] evaluate postfix expression")
 	rb, err := e.EvaluatePostFix(s, query, collectionID)
 	if err != nil {
 		return [][]byte{}, err

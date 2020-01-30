@@ -21,7 +21,7 @@ func main() {
 			item := it.Item()
 			k := item.Key()
 			err := item.Value(func(v []byte) error {
-				fmt.Printf("key=%s, value=%s\n", k, v)
+				fmt.Printf("key=%s, value=%v\n", k, v)
 				return nil
 			})
 			if err != nil {
