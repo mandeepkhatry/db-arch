@@ -38,6 +38,7 @@ var arthmeticExecution = map[string]func(io.Store, string, string, []byte, []byt
 
 	"=": func(s io.Store, fieldName string, fieldType string, byteOrderedValue []byte,
 		dbID []byte, namespaceID []byte, collectionID []byte) (roaring.Bitmap, error) {
+
 		fmt.Println("[[evaluate.go/arthemticExecution]]")
 		rb := roaring.New()
 
@@ -57,11 +58,14 @@ var arthmeticExecution = map[string]func(io.Store, string, string, []byte, []byt
 		}
 		fmt.Println("[[evaluate.go/rb]],rb")
 		return *rb, nil
+
 	},
 
 	">": func(s io.Store, fieldName string, fieldType string, byteOrderedValue []byte,
 		dbID []byte, namespaceID []byte, collectionID []byte) (roaring.Bitmap, error) {
+
 		return roaring.Bitmap{}, nil
+
 	},
 
 	"<": func(s io.Store, fieldName string, fieldType string, byteOrderedValue []byte,
@@ -89,6 +93,7 @@ var arthmeticExecution = map[string]func(io.Store, string, string, []byte, []byt
 		dbID []byte, namespaceID []byte, collectionID []byte) (roaring.Bitmap, error) {
 
 		return roaring.Bitmap{}, nil
+
 	},
 }
 
