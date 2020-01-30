@@ -536,6 +536,7 @@ func (e *Engine) SearchDocument(s io.Store, collection string,
 	if err != nil {
 		return [][]byte{}, err
 	}
+	print("RB is ", rb)
 	resultRoaring := rb.(roaring.Bitmap)
 	//retrieve document keys for search
 	searchKeys := make([][]byte, 0)

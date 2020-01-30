@@ -2,6 +2,7 @@ package engine
 
 import (
 	"bytes"
+	"db-arch/server/internal/def"
 	marshal2 "db-arch/server/internal/engine/marshal"
 	"encoding/binary"
 	"encoding/json"
@@ -17,25 +18,6 @@ import (
 /*
 	All utility functions are defined here!
 */
-
-//getApplicationSpecificType return application specific data type
-func getApplicationSpecificType(typeOfData string, valueInterface interface{}) string {
-	if typeOfData == "string" {
-		//TODO seperate for word and words
-		return "word"
-	} else if typeOfData == "float64" || typeOfData == "float32" {
-		return "double"
-	} else if typeOfData == "bool" {
-		return "bool"
-	} else if typeOfData == "time.Time" {
-		return "datetime"
-	} else if typeOfData == "int" {
-		return "int"
-	}
-
-	//New type
-	return "new type"
-}
 
 //getMACAddress return 3 byte MAC address of current machine
 func getMACAddress() []byte {
@@ -169,29 +151,29 @@ func findTypeOfData(data map[string][]byte) (map[string]string, map[string][]byt
 		//Note : data from json even in form of integer is represented as float64 type
 		if findIfFLoat(dataType) == true {
 			if checkIfInt(valueInterface.(float64)) {
-				typeOfData[k] = getApplicationSpecificType("int", valueInterface)
+				typeOfData[k] = def.ApplicationSpecificType["int"]
 				newData[k] = marshal2.TypeMarshal("int", valueInterface)
 			} else {
-				typeOfData[k] = getApplicationSpecificType("float64", valueInterface)
-				newData[k] = marshal2.TypeMarshal("float", valueInterface)
+				typeOfData[k] = def.ApplicationSpecificType["float64"]
+				newData[k] = marshal2.TypeMarshal("float64", valueInterface)
 			}
 
 		} else if dataType == "string" {
 			time, _ := time.Parse(time.RFC3339, valueInterface.(string))
 
 			if time.String() == "0001-01-01 00:00:00 +0000 UTC" {
-				typeOfData[k] = getApplicationSpecificType("string", valueInterface)
+				typeOfData[k] = def.ApplicationSpecificType["string"]
 				newData[k] = marshal2.TypeMarshal("string", valueInterface)
 			} else {
 				var timeInterface interface{}
 				timeInterface = time
-				timeType := getApplicationSpecificType(fmt.Sprintf("%T", time), valueInterface)
+				timeType := def.ApplicationSpecificType[fmt.Sprintf("%T", time)]
 				typeOfData[k] = timeType
 				newData[k] = marshal2.TypeMarshal("time.Time", timeInterface)
 			}
 		} else {
 			newData[k] = marshal2.TypeMarshal(dataType, valueInterface)
-			typeOfData[k] = getApplicationSpecificType(dataType, valueInterface)
+			typeOfData[k] = def.ApplicationSpecificType[dataType]
 
 		}
 	}

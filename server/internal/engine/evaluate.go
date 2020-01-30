@@ -2,11 +2,11 @@ package engine
 
 import (
 	"db-arch/server/internal/def"
+	"db-arch/server/internal/engine/formatter"
 	"db-arch/server/internal/engine/marshal"
 	"db-arch/server/internal/engine/stack"
 	"db-arch/server/io"
 	"fmt"
-	"reflect"
 	"regexp"
 	"strings"
 
@@ -142,12 +142,20 @@ func parseExpressionFields(exp string) (string, string, string) {
 	re := regexp.MustCompile(`(!=|>=|>|<=|<|=)`)
 	operator := re.Find([]byte(exp)) //get first operator that is matched
 	strArr := strings.Split(exp, string(operator))
-	return strArr[0], string(operator), strings.Trim(strArr[1], "\"")
+	return strArr[0], string(operator), strArr[1]
 }
 
 func findTypeOfValue(value string) (string, []byte) {
-	fmt.Println("[[evaluate.go]] findTypeOfValue:", reflect.TypeOf(value))
-	return "word", marshal.TypeMarshal("string", value)
+	fmt.Println("VALUE is ", value)
+	datatype, formattedData, err := formatter.FormatData(value)
+	fmt.Println("DATATYPE : ", datatype)
+	if err != nil {
+		panic(err)
+	}
+
+	specificDataType := def.ApplicationSpecificType[datatype]
+
+	return specificDataType, marshal.TypeMarshal(datatype, formattedData)
 
 	//if strings.Contains(value, "'") || strings.Contains(value, "\"") {
 	//	fmt.Println("[[evaluate.go]]findtypeofvalue-string:", value)
