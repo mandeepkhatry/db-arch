@@ -5,13 +5,13 @@ import (
 	"db-arch/server/internal/engine/marshal"
 	"db-arch/server/internal/engine/stack"
 	"db-arch/server/io"
-	"fmt"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/RoaringBitmap/roaring"
+	valid "github.com/asaskevich/govalidator"
 )
 
 var operators = map[string]bool{
@@ -34,55 +34,62 @@ var execute = map[string]func(*roaring.Bitmap, *roaring.Bitmap) roaring.Bitmap{
 	//},
 }
 
-var arthmeticExecution = map[string]func(io.Store, string, string, []byte,[]byte,[]byte,[]byte) (roaring.Bitmap,error){
+var arthmeticExecution = map[string]func(io.Store, string, string, []byte, []byte,
+	[]byte, []byte) (roaring.Bitmap, error){
+
 	"=": func(s io.Store, fieldName string, fieldType string, byteOrderedValue []byte,
-		dbID []byte,namespaceID []byte,collectionID []byte) (roaring.Bitmap,error) {
+		dbID []byte, namespaceID []byte, collectionID []byte) (roaring.Bitmap, error) {
 
 		rb := roaring.New()
 
-		indexKey := []byte(def.INDEX_KEY + string(dbID) + ":" + string(collectionID) + ":" + string(namespaceID) + ":" + fieldName + ":" + fieldType + ":" + string(byteOrderedValue)
+		indexKey := []byte(def.INDEX_KEY + string(dbID) + ":" + string(collectionID) + ":" + string(namespaceID) + ":" + fieldName + ":" + fieldType + ":" + string(byteOrderedValue))
 
-		uniqueIDBitmapArray,err:=s.Get(indexKey)
-		if len(uniqueIDBitmapArray)==0 || err!=nil{
-			return roaring.Bitmap{},err
+		uniqueIDBitmapArray, err := s.Get(indexKey)
+		if len(uniqueIDBitmapArray) == 0 || err != nil {
+			return roaring.Bitmap{}, err
 		}
-		err=rb.UnmarshalBinary(uniqueIDBitmapArray)
-		if err!=nil{
-			return roaring.Bitmap{},err
+		err = rb.UnmarshalBinary(uniqueIDBitmapArray)
+		if err != nil {
+			return roaring.Bitmap{}, err
 		}
-		return *rb,nil
+		return *rb, nil
 	},
+
 	">": func(s io.Store, fieldName string, fieldType string, byteOrderedValue []byte,
-		dbID []byte,namespaceID []byte,collectionID []byte) (roaring.Bitmap,error) {
-		return roaring.Bitmap{},nil
+		dbID []byte, namespaceID []byte, collectionID []byte) (roaring.Bitmap, error) {
+		return roaring.Bitmap{}, nil
 	},
+
 	"<": func(s io.Store, fieldName string, fieldType string, byteOrderedValue []byte,
-		dbID []byte,namespaceID []byte,collectionID []byte) (roaring.Bitmap,error) {
+		dbID []byte, namespaceID []byte, collectionID []byte) (roaring.Bitmap, error) {
 
-			return roaring.Bitmap{},nil
-
-	},
-	">=": func(s io.Store, fieldName string,fieldType string, byteOrderedValue []byte,
-		dbID []byte,namespaceID []byte,collectionID []byte) (roaring.Bitmap,error) {
-
-			return roaring.Bitmap{},nil
+		return roaring.Bitmap{}, nil
 
 	},
+
+	">=": func(s io.Store, fieldName string, fieldType string, byteOrderedValue []byte,
+		dbID []byte, namespaceID []byte, collectionID []byte) (roaring.Bitmap, error) {
+
+		return roaring.Bitmap{}, nil
+
+	},
+
 	"<=": func(s io.Store, fieldName string, fieldType string, byteOrderedValue []byte,
-		dbID []byte,namespaceID []byte,collectionID []byte) (roaring.Bitmap,error) {
+		dbID []byte, namespaceID []byte, collectionID []byte) (roaring.Bitmap, error) {
 
-		return roaring.Bitmap{},nil
+		return roaring.Bitmap{}, nil
 
 	},
-	"!=": func(s io.Store, fieldName string, fieldType string, byteOrderedValue []byte,
-		dbID []byte,namespaceID []byte,collectionID []byte) (roaring.Bitmap,error) {
 
-			return roaring.Bitmap{},nil
+	"!=": func(s io.Store, fieldName string, fieldType string, byteOrderedValue []byte,
+		dbID []byte, namespaceID []byte, collectionID []byte) (roaring.Bitmap, error) {
+
+		return roaring.Bitmap{}, nil
 	},
 }
 
 //EvaluatePostFix evaluates postfix expression returns result
-func (e *Engine) EvaluatePostFix(s io.Store, px []string,collectionID []byte)(interface{},error) {
+func (e *Engine) EvaluatePostFix(s io.Store, px []string, collectionID []byte) (interface{}, error) {
 	var tempStack stack.Stack
 	for _, v := range px {
 		if _, ok := operators[v]; !ok {
@@ -91,16 +98,24 @@ func (e *Engine) EvaluatePostFix(s io.Store, px []string,collectionID []byte)(in
 			exp1 := tempStack.Pop().(string)
 			exp2 := tempStack.Pop().(string)
 			//TODO: handle here
-			rb1,err := e.EvaluateExpression(s,exp1,collectionID)
-			rb2,err := e.EvaluateExpression(s,exp2,collectionID)
-			tempStack.Push(execute[v](rb1, rb2))
+			rb1, err := e.EvaluateExpression(s, exp1, collectionID)
+			if err != nil {
+				var tmp interface{}
+				return tmp, err
+			}
+			rb2, err := e.EvaluateExpression(s, exp2, collectionID)
+			if err != nil {
+				var tmp interface{}
+				return tmp, err
+			}
+			tempStack.Push(execute[v](&rb1, &rb2))
 		}
 	}
-	return tempStack.Pop()
+	return tempStack.Pop(), nil
 }
 
 //EvaluateExpression takes in expression and returns roaring bitmap as result
-func (e *Engine) EvaluateExpression(s io.Store,exp string,collectionID []byte) (roaring.Bitmap,error) {
+func (e *Engine) EvaluateExpression(s io.Store, exp string, collectionID []byte) (roaring.Bitmap, error) {
 	/*
 		1. Parse expression to find fieldname, operator, fieldvalue, fieldtype
 		2. Based on operator, carry out operations
@@ -111,11 +126,11 @@ func (e *Engine) EvaluateExpression(s io.Store,exp string,collectionID []byte) (
 	//get fieldtype with ordered value
 	typeOfData, byteOrderedData := findTypeOfValue(fieldvalue)
 
-	rb,err := arthmeticExecution[operator](s,fieldname, typeOfData, byteOrderedData,e.DBID,e.NamespaceIdentifier,collectionID)
-	if err!=nil{
-		return roaring.Bitmap{},err
+	rb, err := arthmeticExecution[operator](s, fieldname, typeOfData, byteOrderedData, e.DBID, e.NamespaceID, collectionID)
+	if err != nil {
+		return roaring.Bitmap{}, err
 	}
-	return rb,nil
+	return rb, nil
 }
 
 func parseExpressionFields(exp string) (string, string, string) {
@@ -127,21 +142,21 @@ func parseExpressionFields(exp string) (string, string, string) {
 
 func findTypeOfValue(value string) (string, []byte) {
 	if strings.Contains(value, "'") || strings.Contains(value, "\"") {
-		return "string",marshal.TypeMarshal("string",value)
+		return "string", marshal.TypeMarshal("string", value)
 	} else if valid.IsInt(value) {
-		val,_:=strconv.Atoi(value)
-		return "int",marshal.TypeMarshal("int",val)
+		val, _ := strconv.Atoi(value)
+		return "int", marshal.TypeMarshal("int", val)
 	} else if valid.IsFloat(value) {
-		val,_:=strconv.ParseFloat(value,64)
-		return "float",marshal.TypeMarshal("float",val)
+		val, _ := strconv.ParseFloat(value, 64)
+		return "float", marshal.TypeMarshal("float", val)
 	} else if value == "true" || value == "false" {
-		val,_:=strconv.ParseBool(value)
-		return "bool",marshal.TypeMarshal("bool",val)
+		val, _ := strconv.ParseBool(value)
+		return "bool", marshal.TypeMarshal("bool", val)
 	} else {
 		time, _ := time.Parse(time.RFC3339, value)
 		if time.String() != "0001-01-01 00:00:00 +0000 UTC" {
-			return "datetime",marshal.TypeMarshal("datetime",time)
+			return "datetime", marshal.TypeMarshal("datetime", time)
 		}
 	}
-	return "new_data_type",[]byte{}
+	return "new_data_type", []byte{}
 }

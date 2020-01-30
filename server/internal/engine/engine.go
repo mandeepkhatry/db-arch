@@ -5,6 +5,9 @@ import (
 	"db-arch/server/io"
 	"encoding/binary"
 	"encoding/json"
+	"fmt"
+
+	"github.com/RoaringBitmap/roaring"
 )
 
 /*
@@ -30,7 +33,7 @@ type Engine struct {
 //TODO: verify
 //ConnectDB initializes engine with DBName, Namespace
 func (e *Engine) ConnectDB(s io.Store) error {
-
+	fmt.Println("[[ConnectDB]] inside function")
 	dbname := []byte(e.DBName)
 	namespace := []byte(e.Namespace)
 
@@ -41,7 +44,7 @@ func (e *Engine) ConnectDB(s io.Store) error {
 
 	e.Session = make(map[string][]byte)
 
-	e.Session[string(dbname)] = dbID
+	e.Session[e.DBName] = dbID
 	e.DBID = dbID
 
 	namespaceID, err := e.GetNamespaceIdentifier(s, namespace)
@@ -49,7 +52,7 @@ func (e *Engine) ConnectDB(s io.Store) error {
 		return err
 	}
 
-	e.Session[string(namespace)] = namespaceID
+	e.Session[e.Namespace] = namespaceID
 	e.NamespaceID = namespaceID
 
 	return nil
@@ -380,6 +383,7 @@ func (e *Engine) SearchIdentifiers(s io.Store, dbname string, collection string,
 
 //TODO: verify
 //InsertDocument retrieves identifiers and inserts document to database
+
 func (e *Engine) InsertDocument(s io.Store,
 	collection string,
 	data map[string][]byte, indices []string) error {
@@ -485,65 +489,70 @@ func (e *Engine) SearchDocument(s io.Store, collection string,
 		return [][]byte{}, def.IDENTIFIER_NOT_FOUND
 	}
 
-	// //find typeOfData  and get byteOrderedData
-	// typeOfData, byteOrderedData := findTypeOfData(query)
+	/*
+		// //find typeOfData  and get byteOrderedData
+		// typeOfData, byteOrderedData := findTypeOfData(query)
 
-	// rb := roaring.New()
+		// rb := roaring.New()
 
-	// for fieldName, fieldType := range typeOfData {
+		// for fieldName, fieldType := range typeOfData {
 
-	// 	//generate indexKey
-	// 	indexKey := []byte(def.INDEX_KEY + string(dbID) + ":" + string(collectionID) + ":" + string(namespaceID) + ":" + fieldName + ":" + fieldType + ":" + string(byteOrderedData[fieldName]))
+		// 	//generate indexKey
+		// 	indexKey := []byte(def.INDEX_KEY + string(dbID) + ":" + string(collectionID) + ":" + string(namespaceID) + ":" + fieldName + ":" + fieldType + ":" + string(byteOrderedData[fieldName]))
 
-	// 	uniqueIDBitmapArray, err := s.Get(indexKey)
-	// 	if len(uniqueIDBitmapArray) == 0 || err != nil {
-	// 		return [][]byte{}, err
-	// 	}
+		// 	uniqueIDBitmapArray, err := s.Get(indexKey)
+		// 	if len(uniqueIDBitmapArray) == 0 || err != nil {
+		// 		return [][]byte{}, err
+		// 	}
 
-	// 	if rb.IsEmpty() == true {
+		// 	if rb.IsEmpty() == true {
 
-	// 		err := rb.UnmarshalBinary(uniqueIDBitmapArray)
+		// 		err := rb.UnmarshalBinary(uniqueIDBitmapArray)
 
-	// 		if err != nil {
-	// 			return [][]byte{}, nil
+		// 		if err != nil {
+		// 			return [][]byte{}, nil
 
-	// 		}
-	// 	} else {
+		// 		}
+		// 	} else {
 
-	// 		tmp := roaring.New()
-	// 		err := tmp.UnmarshalBinary(uniqueIDBitmapArray)
-	// 		if err != nil {
-	// 			return [][]byte{}, err
-	// 		}
-	// 		rb = roaring.FastAnd(rb, tmp) //fast AND two bitmaps
-	// 	}
+		// 		tmp := roaring.New()
+		// 		err := tmp.UnmarshalBinary(uniqueIDBitmapArray)
+		// 		if err != nil {
+		// 			return [][]byte{}, err
+		// 		}
+		// 		rb = roaring.FastAnd(rb, tmp) //fast AND two bitmaps
+		// 	}
 
-	// }
+		// }
 
-	// if rb.IsEmpty() == true {
-	// 	return [][]byte{}, nil
-	// }
+		// if rb.IsEmpty() == true {
+		// 	return [][]byte{}, nil
+		// }
 
-	// //retrieve document keys for search
-	// searchKeys := make([][]byte, 0)
-	// searchKeyLength := len(rb.ToArray())
-	// uniqueIDArr := rb.ToArray() //get all IDs
+	*/
 
-	// //get all documents keys
-	// for i := 0; i < searchKeyLength; i++ {
-	// 	uniqueIDByte := make([]byte, 4)
-	// 	binary.LittleEndian.PutUint32(uniqueIDByte, uniqueIDArr[i])
-	// 	documentKeys := []byte(string(dbID) + ":" + string(collectionID) + ":" + string(namespaceID) + ":" + string(uniqueIDByte))
-	// 	searchKeys = append(searchKeys, documentKeys)
-	// }
+	rb, err := e.EvaluatePostFix(s, query, collectionID)
+	if err != nil {
+		return [][]byte{}, err
+	}
+	resultRoaring := rb.(roaring.Bitmap)
+	//retrieve document keys for search
+	searchKeys := make([][]byte, 0)
+	searchKeyLength := len(resultRoaring.ToArray())
+	uniqueIDArr := resultRoaring.ToArray() //get all IDs
 
-	// resultArr, err := s.GetBatch(searchKeys)
-	// if err != nil {
-	// 	return [][]byte{}, err
-	// }
+	//get all documents keys
+	for i := 0; i < searchKeyLength; i++ {
+		uniqueIDByte := make([]byte, 4)
+		binary.LittleEndian.PutUint32(uniqueIDByte, uniqueIDArr[i])
+		documentKeys := []byte(string(e.DBID) + ":" + string(collectionID) + ":" + string(e.NamespaceID) + ":" + string(uniqueIDByte))
+		searchKeys = append(searchKeys, documentKeys)
+	}
 
-	//REMOVE THIS JUST FOR TEST
-	resultArr := make([][]byte, 0)
+	resultArr, err := s.GetBatch(searchKeys)
+	if err != nil {
+		return [][]byte{}, err
+	}
 
 	return resultArr, nil
 }
