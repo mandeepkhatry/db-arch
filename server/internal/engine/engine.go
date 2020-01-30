@@ -5,6 +5,8 @@ import (
 	"db-arch/server/io"
 	"encoding/binary"
 	"encoding/json"
+
+	"github.com/RoaringBitmap/roaring"
 )
 
 /*
@@ -542,8 +544,25 @@ func (e *Engine) SearchDocument(s io.Store, collection string,
 	// 	return [][]byte{}, err
 	// }
 
-	//REMOVE THIS JUST FOR TEST
-	resultArr := make([][]byte, 0)
-
+	rb, err := e.EvaluatePostFix(s, query, collectionID)
+	if err != nil {
+		return [][]byte{}, err
+	}
+	resultRoaring := rb.(roaring.Bitmap)
+	//retrieve document keys for search
+	searchKeys := make([][]byte, 0)
+	searchKeyLength := len(resultRoaring.ToArray())
+	uniqueIDArr := resultRoaring.ToArray() //get all IDs
+	//get all documents keys
+	for i := 0; i < searchKeyLength; i++ {
+		uniqueIDByte := make([]byte, 4)
+		binary.LittleEndian.PutUint32(uniqueIDByte, uniqueIDArr[i])
+		documentKeys := []byte(string(e.DBID) + ":" + string(collectionID) + ":" + string(e.NamespaceID) + ":" + string(uniqueIDByte))
+		searchKeys = append(searchKeys, documentKeys)
+	}
+	resultArr, err := s.GetBatch(searchKeys)
+	if err != nil {
+		return [][]byte{}, err
+	}
 	return resultArr, nil
 }
