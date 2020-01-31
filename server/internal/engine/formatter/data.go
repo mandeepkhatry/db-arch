@@ -2,11 +2,12 @@ package formatter
 
 import (
 	"errors"
-	dateparse "github.com/araddon/dateparse"
-	valid "github.com/asaskevich/govalidator"
 	"strconv"
 	"strings"
 	"time"
+
+	dateparse "github.com/araddon/dateparse"
+	valid "github.com/asaskevich/govalidator"
 )
 
 //FormatData returns type sepecific value according to value
@@ -27,7 +28,7 @@ func FormatData(value string) (string, interface{}, error) {
 		formattedData, err := StringToString(value)
 		return "time.Time", formattedData, err
 	}
-	return "unknown_type", nil, nil
+	return "unknown_type", nil, errors.New("unknown data type")
 }
 
 //FormatConstantDate returns string of standard format constants and error

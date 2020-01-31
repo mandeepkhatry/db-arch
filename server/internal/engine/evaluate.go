@@ -38,7 +38,12 @@ var airthmeticExecution = map[string]func(io.Store, string, string, []byte, []by
 
 	"=": func(s io.Store, fieldName string, fieldType string, byteOrderedValue []byte,
 		dbID []byte, namespaceID []byte, collectionID []byte) (roaring.Bitmap, error) {
+<<<<<<< HEAD
 		fmt.Println("[[evaluate.go/arthemeticExecution]]")
+=======
+
+		fmt.Println("[[evaluate.go/arthemticExecution]]")
+>>>>>>> ff0422b77dbe1c60158a095887dd5300603951f5
 		rb := roaring.New()
 
 		fmt.Println("[[evaluate.go]]/44]", dbID, collectionID, namespaceID)
@@ -57,11 +62,14 @@ var airthmeticExecution = map[string]func(io.Store, string, string, []byte, []by
 		}
 		fmt.Println("[[evaluate.go/rb]],rb")
 		return *rb, nil
+
 	},
 
 	">": func(s io.Store, fieldName string, fieldType string, byteOrderedValue []byte,
 		dbID []byte, namespaceID []byte, collectionID []byte) (roaring.Bitmap, error) {
+
 		return roaring.Bitmap{}, nil
+
 	},
 
 	"<": func(s io.Store, fieldName string, fieldType string, byteOrderedValue []byte,
@@ -89,12 +97,14 @@ var airthmeticExecution = map[string]func(io.Store, string, string, []byte, []by
 		dbID []byte, namespaceID []byte, collectionID []byte) (roaring.Bitmap, error) {
 
 		return roaring.Bitmap{}, nil
+
 	},
 }
 
 //EvaluatePostFix evaluates postfix expression returns result
 func (e *Engine) EvaluatePostFix(s io.Store, px []string, collectionID []byte) (interface{}, error) {
 	var tempStack stack.Stack
+
 	for _, v := range px {
 		if _, ok := operators[v]; !ok {
 			tempStack.Push(v)
@@ -135,10 +145,15 @@ func (e *Engine) EvaluatePostFix(s io.Store, px []string, collectionID []byte) (
 			tempStack.Push(execute[v](&rb1, &rb2))
 		}
 	}
+<<<<<<< HEAD
 	fmt.Println("[[evaluate.go]] EVALUATE POSTFIX")
 	result := tempStack.Pop()
 	fmt.Println("RESULT : ", result.(roaring.Bitmap))
 	return result, nil
+=======
+
+	return tempStack.Pop(), nil
+>>>>>>> ff0422b77dbe1c60158a095887dd5300603951f5
 }
 
 //EvaluateExpression takes in expression and returns roaring bitmap as result
@@ -153,8 +168,13 @@ func (e *Engine) EvaluateExpression(s io.Store, exp string, collectionID []byte)
 	//get fieldtype with ordered value
 	typeOfData, byteOrderedData := findTypeOfValue(fieldvalue)
 	fmt.Println("[[evaluate.go]]typeOfData,byteorderedData:", typeOfData, byteOrderedData)
+<<<<<<< HEAD
 	fmt.Println("[[evaluate.go]]131]", e.DBID, e.NamespaceID, collectionID)
 	rb, err := airthmeticExecution[operator](s, fieldname, typeOfData, byteOrderedData, e.DBID, e.NamespaceID, collectionID)
+=======
+	fmt.Println("[[evaluate.go]]:131", e.DBID, e.NamespaceID, collectionID)
+	rb, err := arthmeticExecution[operator](s, fieldname, typeOfData, byteOrderedData, e.DBID, e.NamespaceID, collectionID)
+>>>>>>> ff0422b77dbe1c60158a095887dd5300603951f5
 	if err != nil {
 		return roaring.Bitmap{}, err
 	}
@@ -166,7 +186,7 @@ func parseExpressionFields(exp string) (string, string, string) {
 	re := regexp.MustCompile(`(!=|>=|>|<=|<|=)`)
 	operator := re.Find([]byte(exp)) //get first operator that is matched
 	strArr := strings.Split(exp, string(operator))
-	return strArr[0], string(operator), strArr[1]
+	return strArr[0], string(operator), (strArr[1])
 }
 
 func findTypeOfValue(value string) (string, []byte) {
