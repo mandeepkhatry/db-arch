@@ -24,7 +24,7 @@ func FormatData(value string) (string, interface{}, error) {
 		formattedData, err := StringToBool(value)
 		return "bool", formattedData, err
 	} else if isValidDateTime(value) {
-		formattedData, err := StringToDateTime(value)
+		formattedData, err := StringToString(value)
 		return "time.Time", formattedData, err
 	}
 	return "unknown_type", nil, nil
@@ -42,7 +42,7 @@ func FormatConstantDate(s string) (string, error) {
 func StringToString(s string) (string, error) {
 
 	if (strings.Contains(string(s[0]), "'") && strings.Contains(string(s[len(s)-1]), "'")) || (strings.Contains(string(s[0]), "\"") && strings.Contains(string(s[len(s)-1]), "\"")) {
-		return s, nil
+		return s[1 : len(s)-1], nil
 	}
 	return "", errors.New("string is not a string")
 }
@@ -63,7 +63,7 @@ func StringToInteger(s string) (int, error) {
 //StringToFloat returns float64 value corresponding to string and error
 func StringToFloat(s string) (float64, error) {
 	if s == "" {
-		return 0, errors.New("string is not float")
+		return 0, errors.New("string is not float")
 	}
 
 	if f, err := strconv.ParseFloat(s, 64); err == nil {

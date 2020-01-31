@@ -43,7 +43,7 @@ func marshalInt(valueInterface interface{}) []byte {
 	buf := make([]byte, 8)
 	//32768 represents range
 	//Make sure to observe this range
-	numToConvert := int(valueInterface.(float64)) + INT_RANGE
+	numToConvert := int(valueInterface.(int)) + INT_RANGE
 	binary.BigEndian.PutUint32(buf, uint32(numToConvert))
 	return buf
 }

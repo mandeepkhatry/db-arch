@@ -24,7 +24,10 @@ import (
 func postDocument(c document.DocumentServiceClient) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		dataInterface := make(map[string]interface{})
-		err := json.NewDecoder(r.Body).Decode(&dataInterface)
+
+		decoderInstance := json.NewDecoder(r.Body)
+		decoderInstance.UseNumber()
+		err := decoderInstance.Decode(&dataInterface)
 
 		if err != nil {
 			w.Header().Add("Content-Type", "application/json")
