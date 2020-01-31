@@ -1,6 +1,4 @@
- 
-//Grammar to parse queries 
-
+//Grammar to parse queries
 {
     package parser
     import (
@@ -145,7 +143,7 @@ RetrieveFieldVal<-("\u0022" (_ ALPHA_NUM_TOKEN _)* "\u0022" / [a-z0-9]+ / [0-9]+
     return string(c.text),nil 
 }
 
-RetrieveFieldRest <- f:RetrieveFieldVal {
+RetrieveFieldRest <- f:RetrieveFieldVal _{
     return f.(string),nil 
 }
 

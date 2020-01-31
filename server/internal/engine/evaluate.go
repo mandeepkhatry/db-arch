@@ -63,7 +63,7 @@ var arthmeticExecution = map[string]func(io.Store, string, string, []byte, []byt
 
 	">": func(s io.Store, fieldName string, fieldType string, byteOrderedValue []byte,
 		dbID []byte, namespaceID []byte, collectionID []byte) (roaring.Bitmap, error) {
-
+		//TODO: discuss memory related issue here
 		return roaring.Bitmap{}, nil
 
 	},
