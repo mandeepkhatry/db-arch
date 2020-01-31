@@ -119,6 +119,14 @@ func findIfFLoat(typeOfData string) bool {
 	return false
 }
 
+//findIfInt finds if type of data is int
+func findIfInt(typeOfData string) bool {
+	if typeOfData == "int" {
+		return true
+	}
+	return false
+}
+
 //checkIfInt finds if data is integer type
 //Note : data from json even in form of integer is represented as float64 type
 func checkIfInt(data float64) bool {
@@ -146,17 +154,26 @@ func findTypeOfData(data map[string][]byte) (map[string]string, map[string][]byt
 		if err != nil {
 			panic(err)
 		}
+		fmt.Println("[inteface data] : ", valueInterface)
 
 		dataType := fmt.Sprintf("%T", valueInterface)
+
+		if dataType == "float64" {
+			if (valueInterface.(float64) - float64(int(valueInterface.(float64)))) == 0 {
+				dataType = "int"
+				valueInterface = int(valueInterface.(float64))
+			}
+		}
+
 		//Note : data from json even in form of integer is represented as float64 type
 		if findIfFLoat(dataType) == true {
-			if checkIfInt(valueInterface.(float64)) {
-				typeOfData[k] = def.ApplicationSpecificType["int"]
-				newData[k] = marshal2.TypeMarshal("int", valueInterface)
-			} else {
-				typeOfData[k] = def.ApplicationSpecificType["float64"]
-				newData[k] = marshal2.TypeMarshal("float64", valueInterface)
-			}
+			typeOfData[k] = def.ApplicationSpecificType["float64"]
+			newData[k] = marshal2.TypeMarshal("float64", valueInterface)
+
+		} else if findIfInt(dataType) == true {
+
+			typeOfData[k] = def.ApplicationSpecificType["int"]
+			newData[k] = marshal2.TypeMarshal("int", valueInterface)
 
 		} else if dataType == "string" {
 			time, _ := time.Parse(time.RFC3339, valueInterface.(string))
