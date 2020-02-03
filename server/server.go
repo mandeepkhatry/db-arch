@@ -146,6 +146,7 @@ func (*server) ConnectionTransfer(ctx context.Context, req *connection.Connectio
 	}
 	return res, nil
 }
+
 func main() {
 	//create a new badger store from factory
 	store = kvstore.NewBadgerFactory([]string{}, "./data/badger")

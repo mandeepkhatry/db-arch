@@ -60,9 +60,16 @@ var airthmeticExecution = map[string]func(io.Store, string, string, []byte, []by
 
 	},
 
+	//TODO: discuss memory related issue here
 	">": func(s io.Store, fieldName string, fieldType string, byteOrderedValue []byte,
 		dbID []byte, namespaceID []byte, collectionID []byte) (roaring.Bitmap, error) {
-		//TODO: discuss memory related issue here
+
+		//rb := roaring.New()
+		//fmt.Println("[[evaluate.go]]/ > condition]", dbID, collectionID, namespaceID)
+		//
+		//indexKey := []byte(def.INDEX_KEY + string(dbID) + ":" + string(collectionID) + ":" + string(namespaceID) + ":" + fieldName + ":" + fieldType + ":" + string(byteOrderedValue))
+		//_,uniqueIDBitmapValueArray,err:=s.Scan(indexKey,[]byte(string("")))
+
 		return roaring.Bitmap{}, nil
 
 	},
