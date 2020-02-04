@@ -20,12 +20,13 @@ var operators = map[string]bool{
 }
 
 //TODO add corresponding function to each operator ("AND, "OR", "NOT")
-var execute = map[string]func(*roaring.Bitmap, *roaring.Bitmap) roaring.Bitmap{
-	"AND": func(rb1, rb2 *roaring.Bitmap) roaring.Bitmap {
-		return *roaring.FastAnd(rb1, rb2)
+var execute = map[string]func(roaring.Bitmap, roaring.Bitmap) roaring.Bitmap{
+	"AND": func(rb1, rb2 roaring.Bitmap) roaring.Bitmap {
+		return *roaring.FastAnd(&rb1, &rb2)
 	},
-	"OR": func(rb1, rb2 *roaring.Bitmap) roaring.Bitmap {
-		return *roaring.FastOr(rb1, rb2)
+	"OR": func(rb1, rb2 roaring.Bitmap) roaring.Bitmap {
+
+		return *roaring.FastOr(&rb1, &rb2)
 	},
 	//TODO: implement NOT
 	//"NOT IN": func(rb1, rb2 roaring.Bitmap) roaring.Bitmap {
@@ -38,12 +39,12 @@ var airthmeticExecution = map[string]func(io.Store, string, string, []byte, []by
 
 	"=": func(s io.Store, fieldName string, fieldType string, byteOrderedValue []byte,
 		dbID []byte, namespaceID []byte, collectionID []byte) (roaring.Bitmap, error) {
-		fmt.Println("[[evaluate.go/arthemeticExecution]]")
+		fmt.Println("[[evaluate.go/airthemeticExecution=]]")
 		rb := roaring.New()
 
 		fmt.Println("[[evaluate.go]]/44]", dbID, collectionID, namespaceID)
 		indexKey := []byte(def.INDEX_KEY + string(dbID) + ":" + string(collectionID) + ":" + string(namespaceID) + ":" + fieldName + ":" + fieldType + ":" + string(byteOrderedValue))
-
+		fmt.Println("INDEX KEY IS ", string(indexKey))
 		uniqueIDBitmapArray, err := s.Get(indexKey)
 		fmt.Println("[[evaluate.go/uniqueIDBitmapArray]]", uniqueIDBitmapArray)
 		if len(uniqueIDBitmapArray) == 0 || err != nil {
@@ -63,42 +64,194 @@ var airthmeticExecution = map[string]func(io.Store, string, string, []byte, []by
 	//TODO: discuss memory related issue here
 	">": func(s io.Store, fieldName string, fieldType string, byteOrderedValue []byte,
 		dbID []byte, namespaceID []byte, collectionID []byte) (roaring.Bitmap, error) {
+		fmt.Println("[[evaluate.go/airthmeticExecution>]]")
+		rb := roaring.New()
 
-		//rb := roaring.New()
-		//fmt.Println("[[evaluate.go]]/ > condition]", dbID, collectionID, namespaceID)
-		//
-		//indexKey := []byte(def.INDEX_KEY + string(dbID) + ":" + string(collectionID) + ":" + string(namespaceID) + ":" + fieldName + ":" + fieldType + ":" + string(byteOrderedValue))
-		//_,uniqueIDBitmapValueArray,err:=s.Scan(indexKey,[]byte(string("")))
+		startKey := []byte(def.INDEX_KEY + string(dbID) + ":" + string(collectionID) + ":" + string(namespaceID) + ":" + fieldName + ":" + fieldType + ":" + string(byteOrderedValue))
+		prefix := []byte(def.INDEX_KEY + string(dbID) + ":" + string(collectionID) + ":" + string(namespaceID) + ":" + fieldName + ":" + fieldType + ":")
 
-		return roaring.Bitmap{}, nil
+		_, values, err := s.PrefixScan(startKey, prefix, 0)
+
+		uniqueIDBitmapArray := values[1:]
+
+		if len(uniqueIDBitmapArray) == 0 || err != nil {
+			return roaring.Bitmap{}, err
+		}
+
+		for _, v := range uniqueIDBitmapArray {
+			if len(rb.ToArray()) == 0 {
+				err = rb.UnmarshalBinary(v)
+				if err != nil {
+					return roaring.Bitmap{}, err
+				}
+			}
+			tempRb := roaring.New()
+			err = tempRb.UnmarshalBinary(v)
+			if err != nil {
+				return roaring.Bitmap{}, err
+			}
+			fmt.Println("TEMP RB is ", tempRb)
+			rb = roaring.FastOr(rb, tempRb)
+		}
+
+		fmt.Println("[[evaluate.go/rb]]", rb)
+
+		return *rb, err
 
 	},
 
 	"<": func(s io.Store, fieldName string, fieldType string, byteOrderedValue []byte,
 		dbID []byte, namespaceID []byte, collectionID []byte) (roaring.Bitmap, error) {
 
-		return roaring.Bitmap{}, nil
+		fmt.Println("[[evaluate.go/airthmeticExecution<]]")
+		rb := roaring.New()
+
+		endKey := []byte(def.INDEX_KEY + string(dbID) + ":" + string(collectionID) + ":" + string(namespaceID) + ":" + fieldName + ":" + fieldType + ":" + string(byteOrderedValue))
+		prefix := []byte(def.INDEX_KEY + string(dbID) + ":" + string(collectionID) + ":" + string(namespaceID) + ":" + fieldName + ":" + fieldType + ":")
+
+		_, values, err := s.ReversePrefixScan(endKey, prefix, 0)
+		uniqueIDBitmapArray := values[1:]
+
+		if len(uniqueIDBitmapArray) == 0 || err != nil {
+			return roaring.Bitmap{}, err
+		}
+
+		for _, v := range uniqueIDBitmapArray {
+			if len(rb.ToArray()) == 0 {
+				err = rb.UnmarshalBinary(v)
+				if err != nil {
+					return roaring.Bitmap{}, err
+				}
+			}
+			tempRb := roaring.New()
+			err = tempRb.UnmarshalBinary(v)
+			if err != nil {
+				return roaring.Bitmap{}, err
+			}
+			fmt.Println("TEMP RB is ", tempRb)
+			rb = roaring.FastOr(rb, tempRb)
+		}
+
+		fmt.Println("[[evaluate.go/rb]]", rb)
+
+		return *rb, err
 
 	},
 
 	">=": func(s io.Store, fieldName string, fieldType string, byteOrderedValue []byte,
 		dbID []byte, namespaceID []byte, collectionID []byte) (roaring.Bitmap, error) {
+		fmt.Println("[[evaluate.go/airthmeticExecution>=]]")
+		rb := roaring.New()
 
-		return roaring.Bitmap{}, nil
+		startKey := []byte(def.INDEX_KEY + string(dbID) + ":" + string(collectionID) + ":" + string(namespaceID) + ":" + fieldName + ":" + fieldType + ":" + string(byteOrderedValue))
+		prefix := []byte(def.INDEX_KEY + string(dbID) + ":" + string(collectionID) + ":" + string(namespaceID) + ":" + fieldName + ":" + fieldType + ":")
+
+		fmt.Println("STARTKEY", string(startKey))
+		fmt.Println("PREFIX", string(prefix))
+		_, uniqueIDBitmapArray, err := s.PrefixScan(startKey, prefix, 0)
+		fmt.Println("UNIQUEID BITMAP ARRAY is ", uniqueIDBitmapArray)
+		if len(uniqueIDBitmapArray) == 0 || err != nil {
+			return roaring.Bitmap{}, err
+		}
+
+		for _, v := range uniqueIDBitmapArray {
+			if len(rb.ToArray()) == 0 {
+				err = rb.UnmarshalBinary(v)
+				if err != nil {
+					return roaring.Bitmap{}, err
+				}
+			}
+			tempRb := roaring.New()
+			err = tempRb.UnmarshalBinary(v)
+			if err != nil {
+				return roaring.Bitmap{}, err
+			}
+			fmt.Println("TEMP RB is ", tempRb)
+			rb = roaring.FastOr(rb, tempRb)
+		}
+
+		fmt.Println("[[evaluate.go/rb]]", rb)
+
+		return *rb, err
 
 	},
 
 	"<=": func(s io.Store, fieldName string, fieldType string, byteOrderedValue []byte,
 		dbID []byte, namespaceID []byte, collectionID []byte) (roaring.Bitmap, error) {
 
-		return roaring.Bitmap{}, nil
+		fmt.Println("[[evaluate.go/airthmeticExecution<]]")
+		rb := roaring.New()
+
+		endKey := []byte(def.INDEX_KEY + string(dbID) + ":" + string(collectionID) + ":" + string(namespaceID) + ":" + fieldName + ":" + fieldType + ":" + string(byteOrderedValue))
+		prefix := []byte(def.INDEX_KEY + string(dbID) + ":" + string(collectionID) + ":" + string(namespaceID) + ":" + fieldName + ":" + fieldType + ":")
+
+		_, uniqueIDBitmapArray, err := s.ReversePrefixScan(endKey, prefix, 0)
+
+		if len(uniqueIDBitmapArray) == 0 || err != nil {
+			return roaring.Bitmap{}, err
+		}
+
+		for _, v := range uniqueIDBitmapArray {
+			if len(rb.ToArray()) == 0 {
+				err = rb.UnmarshalBinary(v)
+				if err != nil {
+					return roaring.Bitmap{}, err
+				}
+			}
+			tempRb := roaring.New()
+			err = tempRb.UnmarshalBinary(v)
+			if err != nil {
+				return roaring.Bitmap{}, err
+			}
+			fmt.Println("TEMP RB is ", tempRb)
+			rb = roaring.FastOr(rb, tempRb)
+		}
+
+		fmt.Println("[[evaluate.go/rb]]", rb)
+
+		return *rb, err
 
 	},
 
 	"!=": func(s io.Store, fieldName string, fieldType string, byteOrderedValue []byte,
 		dbID []byte, namespaceID []byte, collectionID []byte) (roaring.Bitmap, error) {
 
-		return roaring.Bitmap{}, nil
+		fmt.Println("[[evaluate.go/airthmeticExecution<]]")
+		rb := roaring.New()
+
+		endKey := []byte(def.INDEX_KEY + string(dbID) + ":" + string(collectionID) + ":" + string(namespaceID) + ":" + fieldName + ":" + fieldType + ":" + string(byteOrderedValue))
+		prefix := []byte(def.INDEX_KEY + string(dbID) + ":" + string(collectionID) + ":" + string(namespaceID) + ":" + fieldName + ":" + fieldType + ":")
+
+		_, uniqueIDBitmapArray, err := s.ReversePrefixScan(endKey, prefix, 0)
+		uniqueIDBitmapArray = uniqueIDBitmapArray[1:]
+		_, valuesFor, err := s.PrefixScan(endKey, prefix, 0)
+		valuesFor = valuesFor[1:]
+
+		uniqueIDBitmapArray = append(uniqueIDBitmapArray, valuesFor...)
+
+		if len(uniqueIDBitmapArray) == 0 || err != nil {
+			return roaring.Bitmap{}, err
+		}
+
+		for _, v := range uniqueIDBitmapArray {
+			if len(rb.ToArray()) == 0 {
+				err = rb.UnmarshalBinary(v)
+				if err != nil {
+					return roaring.Bitmap{}, err
+				}
+			}
+			tempRb := roaring.New()
+			err = tempRb.UnmarshalBinary(v)
+			if err != nil {
+				return roaring.Bitmap{}, err
+			}
+			fmt.Println("TEMP RB is ", tempRb)
+			rb = roaring.FastOr(rb, tempRb)
+		}
+
+		fmt.Println("[[evaluate.go/rb]]", rb)
+
+		return *rb, err
 
 	},
 }
@@ -144,13 +297,13 @@ func (e *Engine) EvaluatePostFix(s io.Store, px []string, collectionID []byte) (
 				rb2 = exp2.(roaring.Bitmap)
 			}
 
-			tempStack.Push(execute[v](&rb1, &rb2))
+			tempStack.Push(execute[v](rb1, rb2))
 		}
 	}
 
 	fmt.Println("[[evaluate.go]] EVALUATE POSTFIX")
 	result := tempStack.Pop()
-	fmt.Println("RESULT : ", result.(roaring.Bitmap))
+
 	return result, nil
 
 }
@@ -169,6 +322,8 @@ func (e *Engine) EvaluateExpression(s io.Store, exp string, collectionID []byte)
 	fmt.Println("[[evaluate.go]]typeOfData,byteorderedData:", typeOfData, byteOrderedData)
 
 	fmt.Println("[[evaluate.go]]131]", e.DBID, e.NamespaceID, collectionID)
+
+	fmt.Println("Operator is ", operator)
 	rb, err := airthmeticExecution[operator](s, fieldname, typeOfData, byteOrderedData, e.DBID, e.NamespaceID, collectionID)
 
 	if err != nil {

@@ -265,7 +265,7 @@ func (s *StoreClient) ReverseScan(startKey []byte, endKey []byte, limit int) ([]
 	opts.Reverse = true
 	counter := 0
 	err := s.DB.View(func(txn *badger.Txn) error {
-		it := txn.NewIterator(badger.DefaultIteratorOptions)
+		it := txn.NewIterator(opts)
 		defer it.Close()
 
 		for it.Seek(endKey); it.Valid(); it.Next() {
@@ -369,7 +369,7 @@ func (s *StoreClient) ReversePrefixScan(endKey []byte, prefix []byte, limit int)
 	if limit == 0 {
 		counter := 0
 		err := s.DB.View(func(txn *badger.Txn) error {
-			it := txn.NewIterator(badger.DefaultIteratorOptions)
+			it := txn.NewIterator(opts)
 			defer it.Close()
 
 			for it.Seek(endKey); it.ValidForPrefix(prefix); it.Next() {
@@ -396,7 +396,7 @@ func (s *StoreClient) ReversePrefixScan(endKey []byte, prefix []byte, limit int)
 		//if limit is not set to zero, scan in reverse for limit x
 		counter := 0
 		err := s.DB.View(func(txn *badger.Txn) error {
-			it := txn.NewIterator(badger.DefaultIteratorOptions)
+			it := txn.NewIterator(opts)
 			defer it.Close()
 
 			for it.Seek(endKey); it.ValidForPrefix(prefix); it.Next() {

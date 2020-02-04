@@ -536,8 +536,9 @@ func (e *Engine) SearchDocument(s io.Store, collection string,
 	if err != nil {
 		return [][]byte{}, err
 	}
-	print("RB is ", rb)
+
 	resultRoaring := rb.(roaring.Bitmap)
+	fmt.Println("FINAL RB is ", resultRoaring.ToArray())
 	//retrieve document keys for search
 	searchKeys := make([][]byte, 0)
 	searchKeyLength := len(resultRoaring.ToArray())
@@ -545,6 +546,7 @@ func (e *Engine) SearchDocument(s io.Store, collection string,
 	//get all documents keys
 	for i := 0; i < searchKeyLength; i++ {
 		uniqueIDByte := make([]byte, 4)
+
 		binary.LittleEndian.PutUint32(uniqueIDByte, uniqueIDArr[i])
 		documentKeys := []byte(string(e.DBID) + ":" + string(collectionID) + ":" + string(e.NamespaceID) + ":" + string(uniqueIDByte))
 		searchKeys = append(searchKeys, documentKeys)

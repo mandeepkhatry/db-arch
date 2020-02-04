@@ -107,10 +107,11 @@ func (*server) QueryTransfer(ctx context.Context, req *query.QueryTransferReques
 		return &query.QueryTransferResponse{}, status.Error(statusCode, err.Error())
 	}
 	fmt.Println("[[server.go]]resultArray", resultArray)
-	var resultInBytes map[string][]byte
 	response := make([]*query.Response, 0)
 
 	for _, v := range resultArray {
+		var resultInBytes = make(map[string][]byte)
+
 		//bytes to map[string][]byte
 		json.Unmarshal(v, &resultInBytes)
 		var each_response query.Response
@@ -152,7 +153,7 @@ func main() {
 	store = kvstore.NewBadgerFactory([]string{}, "./data/badger")
 
 	//create tikv
-	// store=kvstore.NewTiKVFactory([]string{"addr here"},"")
+	// store = kvstore.NewTiKVFactory([]string{"127.0.0.1:2379"}, "")
 
 	//read your env file and load them into ENV for this process
 	err := godotenv.Load()
