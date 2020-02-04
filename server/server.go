@@ -102,6 +102,10 @@ func (*server) QueryTransfer(ctx context.Context, req *query.QueryTransferReques
 	//TODO SearchDocumet contains code of evalation from postfixQuery
 	resultArray, err := eng.SearchDocument(store, collection, postfixQuery)
 
+	// if len(resultArray) == 0 {
+	// 	return &query.QueryTransferResponse{}, def.RESULTS_NOT_FOUND
+	// }
+
 	if err != nil {
 		statusCode := def.ERRTYPE[err]
 		return &query.QueryTransferResponse{}, status.Error(statusCode, err.Error())

@@ -72,11 +72,11 @@ var airthmeticExecution = map[string]func(io.Store, string, string, []byte, []by
 
 		_, values, err := s.PrefixScan(startKey, prefix, 0)
 
-		uniqueIDBitmapArray := values[1:]
-
-		if len(uniqueIDBitmapArray) == 0 || err != nil {
+		if len(values) == 0 || err != nil {
 			return roaring.Bitmap{}, err
 		}
+
+		uniqueIDBitmapArray := values[1:]
 
 		for _, v := range uniqueIDBitmapArray {
 			if len(rb.ToArray()) == 0 {
@@ -110,11 +110,12 @@ var airthmeticExecution = map[string]func(io.Store, string, string, []byte, []by
 		prefix := []byte(def.INDEX_KEY + string(dbID) + ":" + string(collectionID) + ":" + string(namespaceID) + ":" + fieldName + ":" + fieldType + ":")
 
 		_, values, err := s.ReversePrefixScan(endKey, prefix, 0)
-		uniqueIDBitmapArray := values[1:]
 
-		if len(uniqueIDBitmapArray) == 0 || err != nil {
+		if len(values) == 0 || err != nil {
 			return roaring.Bitmap{}, err
 		}
+
+		uniqueIDBitmapArray := values[1:]
 
 		for _, v := range uniqueIDBitmapArray {
 			if len(rb.ToArray()) == 0 {
@@ -223,9 +224,20 @@ var airthmeticExecution = map[string]func(io.Store, string, string, []byte, []by
 		prefix := []byte(def.INDEX_KEY + string(dbID) + ":" + string(collectionID) + ":" + string(namespaceID) + ":" + fieldName + ":" + fieldType + ":")
 
 		_, uniqueIDBitmapArray, err := s.ReversePrefixScan(endKey, prefix, 0)
-		uniqueIDBitmapArray = uniqueIDBitmapArray[1:]
+
+		if len(uniqueIDBitmapArray) > 0 {
+			uniqueIDBitmapArray = uniqueIDBitmapArray[1:]
+
+		}
+
 		_, valuesFor, err := s.PrefixScan(endKey, prefix, 0)
-		valuesFor = valuesFor[1:]
+
+		if len(valuesFor) > 0 {
+			valuesFor = valuesFor[1:]
+
+		} else {
+			return roaring.Bitmap{}, err
+		}
 
 		uniqueIDBitmapArray = append(uniqueIDBitmapArray, valuesFor...)
 

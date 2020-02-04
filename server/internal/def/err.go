@@ -27,6 +27,7 @@ var (
 	START_KEY_UNKNOWN           error = errors.New("Can't scan from last without knowing startKey")
 	IDENTIFIER_NOT_FOUND        error = errors.New("id not found for given db/collection/namespace")
 	CONNECTION_NOT_ESTABLISHED  error = errors.New("connection to database not established")
+	RESULTS_NOT_FOUND           error = errors.New("results not found")
 )
 
 //define gRPC error status codes

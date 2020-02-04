@@ -7,7 +7,7 @@ import (
 )
 
 func main() {
-	db, err := badger.Open(badger.DefaultOptions("./badger"))
+	db, err := badger.Open(badger.DefaultOptions("./data/badger"))
 	if err != nil {
 		panic(err)
 	}
