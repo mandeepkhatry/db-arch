@@ -13,6 +13,10 @@ import (
 //FormatData returns type sepecific value according to value
 func FormatData(value string) (string, interface{}, error) {
 	if isValidString(value) {
+		if isValidDateTime(value) {
+			formattedData, err := StringToDateTime(value[1 : len(value)-1])
+			return "time.Time", formattedData, err
+		}
 		formattedData, err := StringToString(value)
 		return "string", formattedData, err
 	} else if isValidInt(value) {
@@ -24,9 +28,6 @@ func FormatData(value string) (string, interface{}, error) {
 	} else if isValidBool(value) {
 		formattedData, err := StringToBool(value)
 		return "bool", formattedData, err
-	} else if isValidDateTime(value) {
-		formattedData, err := StringToString(value)
-		return "time.Time", formattedData, err
 	}
 	return "unknown_type", nil, errors.New("unknown data type")
 }
@@ -123,8 +124,16 @@ func isValidBool(s string) bool {
 }
 
 func isValidDateTime(s string) bool {
-	if _, err := StringToDateTime(s); err == nil {
-		return true
+	stringDate := s[1 : len(s)-1]
+	dateFormat, err := FormatConstantDate(stringDate)
+	if err != nil {
+		return false
 	}
-	return false
+	time, _ := time.Parse(dateFormat, stringDate)
+
+	if time.String() == "0001-01-01 00:00:00 +0000 UTC" {
+		return false
+	}
+	return true
+
 }

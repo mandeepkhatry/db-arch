@@ -27,7 +27,7 @@ func (e *Engine) IndexDocument(s io.Store, collectionID []byte,
 		map['age']=sorted int []byte
 		map['weight']=sorted double []byte
 	*/
-
+	fmt.Println("TYPE OF DATA is ", typeOfData)
 	//convert uniqueID into uint32
 	num := binary.LittleEndian.Uint32(uniqueID)
 	fmt.Println("[[index.go]]uniqueID in int32:", num)
@@ -49,6 +49,7 @@ func (e *Engine) IndexDocument(s io.Store, collectionID []byte,
 
 			//generate index key
 			indexKey := []byte(def.INDEX_KEY + string(e.DBID) + ":" + string(collectionID) + ":" + string(e.NamespaceID) + ":" + fieldToIndex + ":" + typeOfData[fieldToIndex] + ":" + string(fieldValue))
+			fmt.Println("NEW INDEXKEY : ", indexKey)
 
 			//get value for that index key
 			val, err := s.Get(indexKey)

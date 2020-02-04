@@ -176,9 +176,11 @@ func findTypeOfData(data map[string][]byte) (map[string]string, map[string][]byt
 			newData[k] = marshal2.TypeMarshal("int", valueInterface)
 
 		} else if dataType == "string" {
-			time, _ := time.Parse(time.RFC3339, valueInterface.(string))
+			layoutISO := "2006-01-02"
+			time, _ := time.Parse(layoutISO, valueInterface.(string))
 
 			if time.String() == "0001-01-01 00:00:00 +0000 UTC" {
+				fmt.Println("CHECK HERE PLS")
 				typeOfData[k] = def.ApplicationSpecificType["string"]
 				newData[k] = marshal2.TypeMarshal("string", valueInterface)
 			} else {
@@ -186,6 +188,7 @@ func findTypeOfData(data map[string][]byte) (map[string]string, map[string][]byt
 				timeInterface = time
 				timeType := def.ApplicationSpecificType[fmt.Sprintf("%T", time)]
 				typeOfData[k] = timeType
+				fmt.Println("TIME TYPE IS : ", timeType)
 				newData[k] = marshal2.TypeMarshal("time.Time", timeInterface)
 			}
 		} else {
