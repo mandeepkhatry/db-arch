@@ -139,7 +139,7 @@ SelectFieldValue <- f1:RetrieveFieldVal fx:RetrieveFieldRest*   {
     return fieldVal,nil 
 }
 
-RetrieveFieldVal<-("\u0022" (_ ALPHA_NUM_TOKEN _)* "\u0022" / [a-z0-9]+ / [0-9.-]+) {
+RetrieveFieldVal<-("\u0022" (_ ALPHA_NUM_TOKEN _)* "\u0022" / [a-z0-9]+ / [0-9]+) {
     return string(c.text),nil 
 }
 
@@ -149,7 +149,7 @@ RetrieveFieldRest <- f:RetrieveFieldVal _ {
 
 /* ---TOKENS HERE------- */
 
-ALPHA_NUM_TOKEN <- [a-zA-Z0-9,-]
+ALPHA_NUM_TOKEN <- [a-zA-Z0-9,-:@.]
 LEFT_PARENTHESIS_TOKEN <- "("
 RIGHT_PARENTHESIS_TOKEN <- ")"
 AND_OPERATOR <- "AND"
