@@ -106,7 +106,7 @@ func (s *StoreClient) DeleteKeyRange(startKey []byte, endKey []byte) error {
 	return nil
 }
 
-//Scan iterates from startKey to endKey upto within limit
+//Scan iterates from startKey to endKey upto within limit for closed set [startKey,endKey]
 func (s *StoreClient) Scan(startKey []byte, endKey []byte, limit int) ([][]byte, [][]byte, error) {
 	keys := make([][]byte, 0)
 	values := make([][]byte, 0)
@@ -115,10 +115,17 @@ func (s *StoreClient) Scan(startKey []byte, endKey []byte, limit int) ([][]byte,
 	if err != nil {
 		return [][]byte{}, [][]byte{}, err
 	}
+	//also include endKey
+	val, err := s.Client.Get(endKey)
+	if err != nil {
+		return [][]byte{}, [][]byte{}, err
+	}
+	keys = append(keys, endKey)
+	values = append(values, val)
 	return keys, values, nil
 }
 
-//ReverseScan takes startKey, endKey and limit to scan in reverse direction in range [endKey,startKey)
+//ReverseScan takes startKey, endKey and limit to scan in reverse direction in range [endKey,startKey]
 //returns key,value,error
 func (s *StoreClient) ReverseScan(startKey []byte, endKey []byte, limit int) ([][]byte, [][]byte, error) {
 	keys := make([][]byte, 0)
@@ -130,5 +137,24 @@ func (s *StoreClient) ReverseScan(startKey []byte, endKey []byte, limit int) ([]
 	if err != nil {
 		return [][]byte{}, [][]byte{}, err
 	}
+	//also include startKey
+	val, err := s.Client.Get(startKey)
+	if err != nil {
+		return [][]byte{}, [][]byte{}, err
+	}
+	keys = append(keys, endKey)
+	values = append(values, val)
 	return keys, values, nil
+}
+
+//PrefixScan
+//TODO:implement this method
+func (s *StoreClient) PrefixScan(startKey []byte, prefix []byte, limit int) ([][]byte, [][]byte, error) {
+	return [][]byte{}, [][]byte{}, nil
+}
+
+//ReversePrefixScan
+//TODO: implement this method
+func (s *StoreClient) ReversePrefixScan(endKey []byte, prefix []byte, limit int) ([][]byte, [][]byte, error) {
+	return [][]byte{}, [][]byte{}, nil
 }

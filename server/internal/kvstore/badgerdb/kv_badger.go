@@ -216,7 +216,7 @@ func (s *StoreClient) DeleteKeyRange(startKey []byte, endKey []byte) error {
 
 }
 
-//Scan iterates from startKey to endKey upto within limit
+//Scan iterates from startKey to endKey for closed set [startKey,endKey] upto within limit
 func (s *StoreClient) Scan(startKey []byte, endKey []byte, limit int) ([][]byte, [][]byte, error) {
 	keys := make([][]byte, 0)
 	values := make([][]byte, 0)
@@ -234,13 +234,12 @@ func (s *StoreClient) Scan(startKey []byte, endKey []byte, limit int) ([][]byte,
 				return err
 			}
 
-			//include [startKey,endKey)
+			keys = append(keys, k)
+			values = append(values, val)
+			//include [startKey,endKey]
 			if bytes.Compare(k, endKey) == 0 || counter > limit {
 				break
 			}
-
-			keys = append(keys, k)
-			values = append(values, val)
 			counter += 1
 		}
 		return nil
@@ -252,7 +251,7 @@ func (s *StoreClient) Scan(startKey []byte, endKey []byte, limit int) ([][]byte,
 	return keys, values, nil
 }
 
-//ReverseScan takes startKey, endKey and limit to scan in reverse direction in range [endKey,startKey]
+//ReverseScan takes startKey, endKey and limit to scan in reverse direction in closed set [endKey,startKey]
 //returns key,value,error
 func (s *StoreClient) ReverseScan(startKey []byte, endKey []byte, limit int) ([][]byte, [][]byte, error) {
 	keys := make([][]byte, 0)
@@ -277,12 +276,12 @@ func (s *StoreClient) ReverseScan(startKey []byte, endKey []byte, limit int) ([]
 				return err
 			}
 
-			//include [endKey,startKey)
+			keys = append(keys, k)
+			values = append(values, val)
+			//include [endKey,startKey]
 			if bytes.Compare(k, startKey) == 0 || counter > limit {
 				break
 			}
-			keys = append(keys, k)
-			values = append(values, val)
 			counter += 1
 
 		}
@@ -294,4 +293,134 @@ func (s *StoreClient) ReverseScan(startKey []byte, endKey []byte, limit int) ([]
 	}
 	return keys, values, nil
 
+}
+
+//PrefixScan scans over [StartKey,endKey] for valid prefix upto limit
+//if limit is zero, it returns whole set of [startKey,endKey]
+func (s *StoreClient) PrefixScan(startKey []byte, prefix []byte, limit int) ([][]byte, [][]byte, error) {
+	keys := make([][]byte, 0)
+	values := make([][]byte, 0)
+
+	if limit == 0 {
+		err := s.DB.View(func(txn *badger.Txn) error {
+			it := txn.NewIterator(badger.DefaultIteratorOptions)
+			defer it.Close()
+
+			for it.Seek(startKey); it.ValidForPrefix(prefix); it.Next() {
+				item := it.Item()
+				k := item.Key()
+				val, err := item.ValueCopy(nil)
+				if err != nil {
+					return err
+				}
+
+				keys = append(keys, k)
+				values = append(values, val)
+			}
+			return nil
+
+		})
+		if err != nil {
+			return [][]byte{}, [][]byte{}, err
+		}
+		return keys, values, nil
+
+	} else {
+		counter := 0
+		err := s.DB.View(func(txn *badger.Txn) error {
+			it := txn.NewIterator(badger.DefaultIteratorOptions)
+			defer it.Close()
+
+			for it.Seek(startKey); it.ValidForPrefix(prefix); it.Next() {
+				item := it.Item()
+				k := item.Key()
+				val, err := item.ValueCopy(nil)
+				if err != nil {
+					return err
+				}
+
+				if counter > limit {
+					break
+				}
+
+				keys = append(keys, k)
+				values = append(values, val)
+				counter += 1
+			}
+			return nil
+		})
+
+		if err != nil {
+			return [][]byte{}, [][]byte{}, err
+		}
+		return keys, values, nil
+	}
+}
+
+//ReversePrefixScan scans over [endKey,startKey] from reverse for valid prefix upto limit
+//if limit is zero, it returns full result set
+func (s *StoreClient) ReversePrefixScan(endKey []byte, prefix []byte, limit int) ([][]byte, [][]byte, error) {
+	keys := make([][]byte, 0)
+	values := make([][]byte, 0)
+	opts := badger.DefaultIteratorOptions
+	opts.PrefetchSize = 10
+	opts.Reverse = true
+
+	if limit == 0 {
+		counter := 0
+		err := s.DB.View(func(txn *badger.Txn) error {
+			it := txn.NewIterator(badger.DefaultIteratorOptions)
+			defer it.Close()
+
+			for it.Seek(endKey); it.ValidForPrefix(prefix); it.Next() {
+				item := it.Item()
+				k := item.Key()
+				val, err := item.ValueCopy(nil)
+				if err != nil {
+					return err
+				}
+
+				keys = append(keys, k)
+				values = append(values, val)
+				counter += 1
+
+			}
+			return nil
+		})
+
+		if err != nil {
+			return [][]byte{}, [][]byte{}, err
+		}
+		return keys, values, nil
+	} else {
+		//if limit is not set to zero, scan in reverse for limit x
+		counter := 0
+		err := s.DB.View(func(txn *badger.Txn) error {
+			it := txn.NewIterator(badger.DefaultIteratorOptions)
+			defer it.Close()
+
+			for it.Seek(endKey); it.ValidForPrefix(prefix); it.Next() {
+				item := it.Item()
+				k := item.Key()
+				val, err := item.ValueCopy(nil)
+				if err != nil {
+					return err
+				}
+
+				if counter > limit {
+					break
+				}
+				keys = append(keys, k)
+				values = append(values, val)
+				counter += 1
+
+			}
+			return nil
+		})
+
+		if err != nil {
+			return [][]byte{}, [][]byte{}, err
+		}
+		return keys, values, nil
+	}
 }

@@ -38,6 +38,8 @@ func (e *Engine) IndexDocument(s io.Store, collectionID []byte,
 		//remove all whitespaces if any
 		indexStr := strings.Replace(indices[i], " ", "", -1)
 		indexStrArr := strings.Split(indexStr, ",")
+
+		//if there is only one condition
 		if len(indexStrArr) == 1 {
 
 			fieldToIndex := indices[i]
@@ -86,6 +88,7 @@ func (e *Engine) IndexDocument(s io.Store, collectionID []byte,
 			}
 
 		} else {
+			//for compound index
 			/*
 				parse filedname,type for each compound condition and create compound index
 			*/
