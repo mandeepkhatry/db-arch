@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"bytes"
 	"db-arch/server/internal/def"
 	"db-arch/server/internal/engine/formatter"
 	"db-arch/server/internal/engine/marshal"
@@ -70,15 +71,17 @@ var airthmeticExecution = map[string]func(io.Store, string, string, []byte, []by
 		startKey := []byte(def.INDEX_KEY + string(dbID) + ":" + string(collectionID) + ":" + string(namespaceID) + ":" + fieldName + ":" + fieldType + ":" + string(byteOrderedValue))
 		prefix := []byte(def.INDEX_KEY + string(dbID) + ":" + string(collectionID) + ":" + string(namespaceID) + ":" + fieldName + ":" + fieldType + ":")
 
-		_, values, err := s.PrefixScan(startKey, prefix, 0)
+		keys, values, err := s.PrefixScan(startKey, prefix, 0)
+
+		if bytes.Compare(keys[0], startKey) == 0 {
+			values = values[1:]
+		}
 
 		if len(values) == 0 || err != nil {
 			return roaring.Bitmap{}, err
 		}
 
-		uniqueIDBitmapArray := values[1:]
-
-		for _, v := range uniqueIDBitmapArray {
+		for _, v := range values {
 			if len(rb.ToArray()) == 0 {
 				err = rb.UnmarshalBinary(v)
 				if err != nil {
@@ -109,15 +112,17 @@ var airthmeticExecution = map[string]func(io.Store, string, string, []byte, []by
 		endKey := []byte(def.INDEX_KEY + string(dbID) + ":" + string(collectionID) + ":" + string(namespaceID) + ":" + fieldName + ":" + fieldType + ":" + string(byteOrderedValue))
 		prefix := []byte(def.INDEX_KEY + string(dbID) + ":" + string(collectionID) + ":" + string(namespaceID) + ":" + fieldName + ":" + fieldType + ":")
 
-		_, values, err := s.ReversePrefixScan(endKey, prefix, 0)
+		keys, values, err := s.ReversePrefixScan(endKey, prefix, 0)
+
+		if bytes.Compare(keys[0], endKey) == 0 {
+			values = values[1:]
+		}
 
 		if len(values) == 0 || err != nil {
 			return roaring.Bitmap{}, err
 		}
 
-		uniqueIDBitmapArray := values[1:]
-
-		for _, v := range uniqueIDBitmapArray {
+		for _, v := range values {
 			if len(rb.ToArray()) == 0 {
 				err = rb.UnmarshalBinary(v)
 				if err != nil {
@@ -223,20 +228,24 @@ var airthmeticExecution = map[string]func(io.Store, string, string, []byte, []by
 		endKey := []byte(def.INDEX_KEY + string(dbID) + ":" + string(collectionID) + ":" + string(namespaceID) + ":" + fieldName + ":" + fieldType + ":" + string(byteOrderedValue))
 		prefix := []byte(def.INDEX_KEY + string(dbID) + ":" + string(collectionID) + ":" + string(namespaceID) + ":" + fieldName + ":" + fieldType + ":")
 
-		_, uniqueIDBitmapArray, err := s.ReversePrefixScan(endKey, prefix, 0)
+		keysleft, uniqueIDBitmapArray, err := s.ReversePrefixScan(endKey, prefix, 0)
 
-		if len(uniqueIDBitmapArray) > 0 {
-			uniqueIDBitmapArray = uniqueIDBitmapArray[1:]
-
+		if err != nil {
+			return roaring.Bitmap{}, err
 		}
 
-		_, valuesFor, err := s.PrefixScan(endKey, prefix, 0)
+		if bytes.Compare(keysleft[0], endKey) == 0 {
+			uniqueIDBitmapArray = uniqueIDBitmapArray[1:]
+		}
 
-		if len(valuesFor) > 0 {
-			valuesFor = valuesFor[1:]
+		keysRight, valuesFor, err := s.PrefixScan(endKey, prefix, 0)
 
-		} else {
+		if err != nil {
 			return roaring.Bitmap{}, err
+		}
+
+		if bytes.Compare(keysRight[0], endKey) == 0 {
+			valuesFor = valuesFor[1:]
 		}
 
 		uniqueIDBitmapArray = append(uniqueIDBitmapArray, valuesFor...)
