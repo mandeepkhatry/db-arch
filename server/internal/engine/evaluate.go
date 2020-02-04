@@ -279,8 +279,17 @@ var airthmeticExecution = map[string]func(io.Store, string, string, []byte, []by
 
 //EvaluatePostFix evaluates postfix expression returns result
 func (e *Engine) EvaluatePostFix(s io.Store, px []string, collectionID []byte) (interface{}, error) {
+	if len(px) == 1 {
+		rb, err := e.EvaluateExpression(s, px[0], collectionID)
+		if err != nil {
+			var tmp interface{}
+			return tmp, err
+		}
+		var result interface{}
+		result = rb
+		return result, nil
+	}
 	var tempStack stack.Stack
-
 	for _, v := range px {
 		if _, ok := operators[v]; !ok {
 			tempStack.Push(v)
