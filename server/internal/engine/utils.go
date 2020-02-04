@@ -3,6 +3,7 @@ package engine
 import (
 	"bytes"
 	"db-arch/server/internal/def"
+	"db-arch/server/internal/engine/formatter"
 	marshal2 "db-arch/server/internal/engine/marshal"
 	"encoding/binary"
 	"encoding/json"
@@ -176,14 +177,14 @@ func findTypeOfData(data map[string][]byte) (map[string]string, map[string][]byt
 			newData[k] = marshal2.TypeMarshal("int", valueInterface)
 
 		} else if dataType == "string" {
-			layoutISO := "2006-01-02"
-			time, _ := time.Parse(layoutISO, valueInterface.(string))
-
-			if time.String() == "0001-01-01 00:00:00 +0000 UTC" {
-				fmt.Println("CHECK HERE PLS")
+			fmt.Println("Value interface in string : ", valueInterface.(string))
+			layout, err := formatter.FormatConstantDate(valueInterface.(string))
+			if err != nil {
 				typeOfData[k] = def.ApplicationSpecificType["string"]
 				newData[k] = marshal2.TypeMarshal("string", valueInterface)
 			} else {
+				time, _ := time.Parse(layout, valueInterface.(string))
+
 				var timeInterface interface{}
 				timeInterface = time
 				timeType := def.ApplicationSpecificType[fmt.Sprintf("%T", time)]
@@ -191,6 +192,7 @@ func findTypeOfData(data map[string][]byte) (map[string]string, map[string][]byt
 				fmt.Println("TIME TYPE IS : ", timeType)
 				newData[k] = marshal2.TypeMarshal("time.Time", timeInterface)
 			}
+
 		} else {
 			newData[k] = marshal2.TypeMarshal(dataType, valueInterface)
 			typeOfData[k] = def.ApplicationSpecificType[dataType]

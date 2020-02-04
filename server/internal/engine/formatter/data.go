@@ -42,7 +42,6 @@ func FormatConstantDate(s string) (string, error) {
 
 //StringToString returns string corresponding to string value and error
 func StringToString(s string) (string, error) {
-
 	if (strings.Contains(string(s[0]), "'") && strings.Contains(string(s[len(s)-1]), "'")) || (strings.Contains(string(s[0]), "\"") && strings.Contains(string(s[len(s)-1]), "\"")) {
 		return s[1 : len(s)-1], nil
 	}
