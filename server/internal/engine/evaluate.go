@@ -35,16 +35,22 @@ var execute = map[string]func(roaring.Bitmap, roaring.Bitmap) roaring.Bitmap{
 	//},
 }
 
-var airthmeticExecution = map[string]func(io.Store, string, string, []byte, []byte,
-	[]byte, []byte) (roaring.Bitmap, error){
+var arithmeticExecution = map[string]func(io.Store, string, string, []byte, []byte,
+	[]byte, []byte, []byte, []byte) (roaring.Bitmap, error){
 
 	"=": func(s io.Store, fieldName string, fieldType string, byteOrderedValue []byte,
-		dbID []byte, namespaceID []byte, collectionID []byte) (roaring.Bitmap, error) {
+		dbID []byte, namespaceID []byte, collectionID []byte, compositeIndexKey []byte, compositePrefix []byte) (roaring.Bitmap, error) {
 		fmt.Println("[[evaluate.go/airthemeticExecution=]]")
 		rb := roaring.New()
 
 		fmt.Println("[[evaluate.go]]/44]", dbID, collectionID, namespaceID)
-		indexKey := []byte(def.INDEX_KEY + string(dbID) + ":" + string(collectionID) + ":" + string(namespaceID) + ":" + fieldName + ":" + fieldType + ":" + string(byteOrderedValue))
+
+		indexKey := []byte{}
+		if len(compositeIndexKey) == 0 {
+			indexKey = []byte(def.INDEX_KEY + string(dbID) + ":" + string(collectionID) + ":" + string(namespaceID) + ":" + fieldName + ":" + fieldType + ":" + string(byteOrderedValue))
+		} else {
+			indexKey = compositeIndexKey
+		}
 		fmt.Println("INDEX KEY IS ", string(indexKey))
 		uniqueIDBitmapArray, err := s.Get(indexKey)
 		fmt.Println("[[evaluate.go/uniqueIDBitmapArray]]", uniqueIDBitmapArray)
@@ -64,12 +70,20 @@ var airthmeticExecution = map[string]func(io.Store, string, string, []byte, []by
 
 	//TODO: discuss memory related issue here
 	">": func(s io.Store, fieldName string, fieldType string, byteOrderedValue []byte,
-		dbID []byte, namespaceID []byte, collectionID []byte) (roaring.Bitmap, error) {
+		dbID []byte, namespaceID []byte, collectionID []byte, compositeIndexKey []byte, compositePrefix []byte) (roaring.Bitmap, error) {
 		fmt.Println("[[evaluate.go/airthmeticExecution>]]")
 		rb := roaring.New()
 
-		startKey := []byte(def.INDEX_KEY + string(dbID) + ":" + string(collectionID) + ":" + string(namespaceID) + ":" + fieldName + ":" + fieldType + ":" + string(byteOrderedValue))
-		prefix := []byte(def.INDEX_KEY + string(dbID) + ":" + string(collectionID) + ":" + string(namespaceID) + ":" + fieldName + ":" + fieldType + ":")
+		startKey := []byte{}
+		prefix := []byte{}
+
+		if len(compositeIndexKey) != 0 && len(compositePrefix) != 0 {
+			startKey = compositeIndexKey
+			prefix = compositePrefix
+		} else {
+			startKey = []byte(def.INDEX_KEY + string(dbID) + ":" + string(collectionID) + ":" + string(namespaceID) + ":" + fieldName + ":" + fieldType + ":" + string(byteOrderedValue))
+			prefix = []byte(def.INDEX_KEY + string(dbID) + ":" + string(collectionID) + ":" + string(namespaceID) + ":" + fieldName + ":" + fieldType + ":")
+		}
 
 		keys, values, err := s.PrefixScan(startKey, prefix, 0)
 		fmt.Println("KEYS : ", keys)
@@ -105,13 +119,21 @@ var airthmeticExecution = map[string]func(io.Store, string, string, []byte, []by
 	},
 
 	"<": func(s io.Store, fieldName string, fieldType string, byteOrderedValue []byte,
-		dbID []byte, namespaceID []byte, collectionID []byte) (roaring.Bitmap, error) {
+		dbID []byte, namespaceID []byte, collectionID []byte, compositeIndexKey []byte, compositePrefix []byte) (roaring.Bitmap, error) {
 
 		fmt.Println("[[evaluate.go/airthmeticExecution<]]")
 		rb := roaring.New()
 
-		endKey := []byte(def.INDEX_KEY + string(dbID) + ":" + string(collectionID) + ":" + string(namespaceID) + ":" + fieldName + ":" + fieldType + ":" + string(byteOrderedValue))
-		prefix := []byte(def.INDEX_KEY + string(dbID) + ":" + string(collectionID) + ":" + string(namespaceID) + ":" + fieldName + ":" + fieldType + ":")
+		endKey := []byte{}
+		prefix := []byte{}
+
+		if len(compositeIndexKey) != 0 && len(compositePrefix) != 0 {
+			endKey = compositeIndexKey
+			prefix = compositePrefix
+		} else {
+			endKey = []byte(def.INDEX_KEY + string(dbID) + ":" + string(collectionID) + ":" + string(namespaceID) + ":" + fieldName + ":" + fieldType + ":" + string(byteOrderedValue))
+			prefix = []byte(def.INDEX_KEY + string(dbID) + ":" + string(collectionID) + ":" + string(namespaceID) + ":" + fieldName + ":" + fieldType + ":")
+		}
 
 		keys, values, err := s.ReversePrefixScan(endKey, prefix, 0)
 
@@ -146,12 +168,20 @@ var airthmeticExecution = map[string]func(io.Store, string, string, []byte, []by
 	},
 
 	">=": func(s io.Store, fieldName string, fieldType string, byteOrderedValue []byte,
-		dbID []byte, namespaceID []byte, collectionID []byte) (roaring.Bitmap, error) {
+		dbID []byte, namespaceID []byte, collectionID []byte, compositeIndexKey []byte, compositePrefix []byte) (roaring.Bitmap, error) {
 		fmt.Println("[[evaluate.go/airthmeticExecution>=]]")
 		rb := roaring.New()
 
-		startKey := []byte(def.INDEX_KEY + string(dbID) + ":" + string(collectionID) + ":" + string(namespaceID) + ":" + fieldName + ":" + fieldType + ":" + string(byteOrderedValue))
-		prefix := []byte(def.INDEX_KEY + string(dbID) + ":" + string(collectionID) + ":" + string(namespaceID) + ":" + fieldName + ":" + fieldType + ":")
+		startKey := []byte{}
+		prefix := []byte{}
+		if len(compositeIndexKey) != 0 && len(compositePrefix) != 0 {
+			startKey = compositeIndexKey
+			prefix = compositePrefix
+
+		} else {
+			startKey = []byte(def.INDEX_KEY + string(dbID) + ":" + string(collectionID) + ":" + string(namespaceID) + ":" + fieldName + ":" + fieldType + ":" + string(byteOrderedValue))
+			prefix = []byte(def.INDEX_KEY + string(dbID) + ":" + string(collectionID) + ":" + string(namespaceID) + ":" + fieldName + ":" + fieldType + ":")
+		}
 
 		fmt.Println("STARTKEY", string(startKey))
 		fmt.Println("PREFIX", string(prefix))
@@ -184,13 +214,21 @@ var airthmeticExecution = map[string]func(io.Store, string, string, []byte, []by
 	},
 
 	"<=": func(s io.Store, fieldName string, fieldType string, byteOrderedValue []byte,
-		dbID []byte, namespaceID []byte, collectionID []byte) (roaring.Bitmap, error) {
+		dbID []byte, namespaceID []byte, collectionID []byte, compositeIndexKey []byte, compositePrefix []byte) (roaring.Bitmap, error) {
 
 		fmt.Println("[[evaluate.go/airthmeticExecution<]]")
 		rb := roaring.New()
 
-		endKey := []byte(def.INDEX_KEY + string(dbID) + ":" + string(collectionID) + ":" + string(namespaceID) + ":" + fieldName + ":" + fieldType + ":" + string(byteOrderedValue))
-		prefix := []byte(def.INDEX_KEY + string(dbID) + ":" + string(collectionID) + ":" + string(namespaceID) + ":" + fieldName + ":" + fieldType + ":")
+		endKey := []byte{}
+		prefix := []byte{}
+
+		if len(compositeIndexKey) != 0 && len(compositePrefix) != 0 {
+			endKey = compositeIndexKey
+			prefix = compositePrefix
+		} else {
+			endKey = []byte(def.INDEX_KEY + string(dbID) + ":" + string(collectionID) + ":" + string(namespaceID) + ":" + fieldName + ":" + fieldType + ":" + string(byteOrderedValue))
+			prefix = []byte(def.INDEX_KEY + string(dbID) + ":" + string(collectionID) + ":" + string(namespaceID) + ":" + fieldName + ":" + fieldType + ":")
+		}
 
 		_, uniqueIDBitmapArray, err := s.ReversePrefixScan(endKey, prefix, 0)
 
@@ -221,13 +259,21 @@ var airthmeticExecution = map[string]func(io.Store, string, string, []byte, []by
 	},
 
 	"!=": func(s io.Store, fieldName string, fieldType string, byteOrderedValue []byte,
-		dbID []byte, namespaceID []byte, collectionID []byte) (roaring.Bitmap, error) {
+		dbID []byte, namespaceID []byte, collectionID []byte, compositeIndexKey []byte, compositePrefix []byte) (roaring.Bitmap, error) {
 
 		fmt.Println("[[evaluate.go/airthmeticExecution<]]")
 		rb := roaring.New()
 
-		endKey := []byte(def.INDEX_KEY + string(dbID) + ":" + string(collectionID) + ":" + string(namespaceID) + ":" + fieldName + ":" + fieldType + ":" + string(byteOrderedValue))
-		prefix := []byte(def.INDEX_KEY + string(dbID) + ":" + string(collectionID) + ":" + string(namespaceID) + ":" + fieldName + ":" + fieldType + ":")
+		endKey := []byte{}
+		prefix := []byte{}
+
+		if len(compositeIndexKey) != 0 && len(compositePrefix) != 0 {
+			endKey = compositeIndexKey
+			prefix = compositePrefix
+		} else {
+			endKey = []byte(def.INDEX_KEY + string(dbID) + ":" + string(collectionID) + ":" + string(namespaceID) + ":" + fieldName + ":" + fieldType + ":" + string(byteOrderedValue))
+			prefix = []byte(def.INDEX_KEY + string(dbID) + ":" + string(collectionID) + ":" + string(namespaceID) + ":" + fieldName + ":" + fieldType + ":")
+		}
 
 		keysleft, uniqueIDBitmapArray, err := s.ReversePrefixScan(endKey, prefix, 0)
 
@@ -355,7 +401,7 @@ func (e *Engine) EvaluateExpression(s io.Store, exp string, collectionID []byte)
 		fmt.Println("[[evaluate.go]]131]", e.DBID, e.NamespaceID, collectionID)
 
 		fmt.Println("Operator is ", operator)
-		rb, err := airthmeticExecution[operator](s, fieldname, typeOfData, byteOrderedData, e.DBID, e.NamespaceID, collectionID)
+		rb, err := arithmeticExecution[operator](s, fieldname, typeOfData, byteOrderedData, e.DBID, e.NamespaceID, collectionID, []byte{}, []byte{})
 
 		if err != nil {
 			return roaring.Bitmap{}, err
@@ -366,25 +412,32 @@ func (e *Engine) EvaluateExpression(s io.Store, exp string, collectionID []byte)
 		//TODO: discuss logic here
 		//for composite condition
 		indexKey := def.INDEX_KEY + string(e.DBID) + ":" + string(collectionID) + ":" + string(e.NamespaceID)
+		prefix := indexKey
+		lastOperator := ""
+		lenCompositeArr := len(compositeCondArr)
+		i := 0
 		//create index key first
 		for _, cond := range compositeCondArr {
-			fieldname, _, fieldvalue := parseExpressionFields(cond)
+			fieldname, operator, fieldvalue := parseExpressionFields(cond)
 			typeOfData, byteOrderedData := findTypeOfValue(fieldvalue)
-			indexKey += ":" + fieldname + ":" + typeOfData + ":" + string(byteOrderedData)
+			if i == (lenCompositeArr - 1) {
+				indexKey += ":" + fieldname + ":" + typeOfData + ":" + string(byteOrderedData)
+				prefix += ":" + fieldname + ":" + typeOfData + ":"
+			} else {
+				indexKey += ":" + fieldname + ":" + typeOfData + ":" + string(byteOrderedData)
+				prefix += ":" + fieldname + ":" + typeOfData + ":" + string(byteOrderedData)
+			}
+			i++
+			lastOperator = operator
 		}
 
-		uniqueIDBitmapArray, err := s.Get([]byte(indexKey))
-		if len(uniqueIDBitmapArray) == 0 || err != nil {
-			return roaring.Bitmap{}, err
-		}
-
-		rb := roaring.New()
-		err = rb.UnmarshalBinary(uniqueIDBitmapArray)
+		rb, err := arithmeticExecution[lastOperator](s, "", "", []byte{}, e.DBID, e.NamespaceID, collectionID, []byte(indexKey), []byte(prefix))
 		if err != nil {
 			return roaring.Bitmap{}, err
 		}
+
 		fmt.Println("roaring:", rb)
-		return *rb, nil
+		return rb, nil
 	}
 
 }

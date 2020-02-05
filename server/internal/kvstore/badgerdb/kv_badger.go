@@ -309,6 +309,7 @@ func (s *StoreClient) PrefixScan(startKey []byte, prefix []byte, limit int) ([][
 			for it.Seek(startKey); it.ValidForPrefix(prefix); it.Next() {
 				item := it.Item()
 				k := item.Key()
+
 				val, err := item.ValueCopy(nil)
 				if err != nil {
 					return err
@@ -317,6 +318,7 @@ func (s *StoreClient) PrefixScan(startKey []byte, prefix []byte, limit int) ([][
 				keys = append(keys, k)
 				values = append(values, val)
 			}
+
 			return nil
 
 		})
@@ -326,6 +328,7 @@ func (s *StoreClient) PrefixScan(startKey []byte, prefix []byte, limit int) ([][
 		return keys, values, nil
 
 	} else {
+
 		counter := 0
 		err := s.DB.View(func(txn *badger.Txn) error {
 			it := txn.NewIterator(badger.DefaultIteratorOptions)
@@ -342,7 +345,6 @@ func (s *StoreClient) PrefixScan(startKey []byte, prefix []byte, limit int) ([][
 				if counter > limit {
 					break
 				}
-
 				keys = append(keys, k)
 				values = append(values, val)
 				counter += 1
