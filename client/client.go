@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"db-arch/client/response"
 	"db-arch/model"
 	"db-arch/pb/connection"
 	"db-arch/pb/document"
@@ -9,7 +10,6 @@ import (
 	"encoding/json"
 	"net/http"
 	"os"
-	"strconv"
 	"strings"
 
 	"fmt"
@@ -29,12 +29,18 @@ func postDocument(c document.DocumentServiceClient) func(http.ResponseWriter, *h
 		decoderInstance.UseNumber()
 		err := decoderInstance.Decode(&dataInterface)
 
+		var postResponse response.PostResponse
+		var metaResponse response.PostMetaResponse
+
 		if err != nil {
 			w.Header().Add("Content-Type", "application/json")
 			w.WriteHeader(200)
-			response := make(map[string]string)
-			response["message"] = "document not created"
-			json.NewEncoder(w).Encode(response)
+			postResponse.Message = "document not created"
+			metaResponse.Status = false
+			metaResponse.Description = "not created"
+			metaResponse.Code = ""
+			postResponse.Metadata = metaResponse
+			json.NewEncoder(w).Encode(postResponse)
 
 			return
 		}
@@ -49,25 +55,33 @@ func postDocument(c document.DocumentServiceClient) func(http.ResponseWriter, *h
 		_, err = sendDocument(c, d)
 
 		if err != nil {
-			//TODO
-			response := make(map[string]string)
 			descFieldSplit := strings.Split(err.Error(), " desc = ")
-			response["description"] = descFieldSplit[1]
 			codeFieldSplit := strings.Split(descFieldSplit[0], " code = ")
-			response["code"] = codeFieldSplit[1]
+
+			metaResponse.Description = descFieldSplit[1]
+			metaResponse.Code = codeFieldSplit[1]
+			metaResponse.Status = false
+
+			postResponse.Message = "document not created"
+			postResponse.Metadata = metaResponse
 
 			w.Header().Add("Content-Type", "application/json")
 			w.WriteHeader(200)
-			json.NewEncoder(w).Encode(response)
+			json.NewEncoder(w).Encode(postResponse)
 			return
 
 		}
 
 		w.Header().Add("Content-Type", "application/json")
 		w.WriteHeader(201)
-		response := make(map[string]string)
-		response["message"] = "document created"
-		json.NewEncoder(w).Encode(response)
+
+		postResponse.Message = "document created"
+		metaResponse.Code = ""
+		metaResponse.Status = true
+		metaResponse.Description = "created"
+		postResponse.Metadata = metaResponse
+
+		json.NewEncoder(w).Encode(postResponse)
 
 		return
 
@@ -91,16 +105,18 @@ func queryDocument(c query.QueryServiceClient) func(http.ResponseWriter, *http.R
 
 		res, err := sendQuery(c, d)
 
-		if err != nil {
-			response := make(map[string]string)
-			descFieldSplit := strings.Split(err.Error(), " desc = ")
-			response["description"] = descFieldSplit[1]
-			codeFieldSplit := strings.Split(descFieldSplit[0], " code = ")
-			response["code"] = codeFieldSplit[1]
+		var queryResponse response.QueryResponse
 
+		if err != nil {
+			queryResponse.Result = nil
+			descFieldSplit := strings.Split(err.Error(), " desc = ")
+			queryResponse.Metadata.Description = descFieldSplit[1]
+			codeFieldSplit := strings.Split(descFieldSplit[0], " code = ")
+			queryResponse.Metadata.Code = codeFieldSplit[1]
+			queryResponse.Metadata.Status = false
 			w.Header().Add("Content-Type", "application/json")
 			w.WriteHeader(200)
-			json.NewEncoder(w).Encode(response)
+			json.NewEncoder(w).Encode(queryResponse)
 			return
 
 		}
@@ -109,32 +125,39 @@ func queryDocument(c query.QueryServiceClient) func(http.ResponseWriter, *http.R
 			w.Header().Add("Content-Type", "application/json")
 			w.WriteHeader(200)
 
-			result := make(map[string](map[string]interface{}))
-
 			//resultInterface represents different types of data
 			var resultInterface interface{}
+			var results = make([]map[string]interface{}, 0)
 
-			for responseKey, responseValue := range res.GetResponse() {
-				eachKV := make(map[string]interface{})
+			for _, responseValue := range res.GetResponse() {
+				var tempResult = make(map[string]interface{})
 				for fieldName, fieldValue := range responseValue.GetResult() {
-					print("fieldname, fieldvalue : ", fieldName, fieldValue)
 					json.Unmarshal(fieldValue, &resultInterface)
-					eachKV[fieldName] = resultInterface
+					tempResult[fieldName] = resultInterface
 				}
-				//key as string and value as map[string]interface{}
-				result["result "+strconv.Itoa(responseKey)] = eachKV
-			}
+				results = append(results, tempResult)
 
-			json.NewEncoder(w).Encode(result)
+				//key as string and value as map[string]interface{}
+			}
+			//meta data
+			queryResponse.Metadata.Status = true
+			queryResponse.Metadata.Code = ""
+			queryResponse.Metadata.Description = ""
+
+			queryResponse.Result = results
+
+			json.NewEncoder(w).Encode(queryResponse)
 
 			return
 
 		}
 		w.Header().Add("Content-Type", "application/json")
 		w.WriteHeader(200)
-		response := make(map[string]string)
-		response["message"] = "query not found"
-		json.NewEncoder(w).Encode(response)
+		queryResponse.Result = nil
+		queryResponse.Metadata.Description = "results not found"
+		queryResponse.Metadata.Code = ""
+		queryResponse.Metadata.Status = false
+		json.NewEncoder(w).Encode(queryResponse)
 		return
 	}
 }
@@ -155,18 +178,21 @@ func connectDatabase(c connection.ConnectionServiceClient) func(http.ResponseWri
 		}
 		res, err := sendConnection(c, d)
 
-		response := make(map[string]string)
+		var connectionResponse response.ConnectionResponse
+
 		if err != nil {
-			response["connection_status"] = "failed to establish connection"
+			connectionResponse.Message = "failed to establish connection"
+			connectionResponse.Metadata.Status = false
 			w.Header().Add("Content-Type", "application/json")
 			w.WriteHeader(200)
-			json.NewEncoder(w).Encode(response)
+			json.NewEncoder(w).Encode(connectionResponse)
 			return
 		}
 
-		response["connection_status"] = res.GetResponse()
+		connectionResponse.Message = res.GetResponse()
+		connectionResponse.Metadata.Status = true
 		w.Header().Add("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(response)
+		json.NewEncoder(w).Encode(connectionResponse)
 		return
 
 	}

@@ -126,7 +126,7 @@ func (s *StoreClient) Get(key []byte) ([]byte, error) {
 //GetBatch retrieves values for given pair of keys in batch
 func (s *StoreClient) GetBatch(keys [][]byte) ([][]byte, error) {
 	if len(keys) == 0 {
-		return [][]byte{}, def.KEY_EMPTY
+		return [][]byte{}, def.RESULTS_NOT_FOUND
 	}
 
 	values := make([][]byte, 0)
