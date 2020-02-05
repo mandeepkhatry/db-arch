@@ -72,13 +72,14 @@ var airthmeticExecution = map[string]func(io.Store, string, string, []byte, []by
 		prefix := []byte(def.INDEX_KEY + string(dbID) + ":" + string(collectionID) + ":" + string(namespaceID) + ":" + fieldName + ":" + fieldType + ":")
 
 		keys, values, err := s.PrefixScan(startKey, prefix, 0)
-
-		if bytes.Compare(keys[0], startKey) == 0 {
-			values = values[1:]
-		}
+		fmt.Println("KEYS : ", keys)
 
 		if len(values) == 0 || err != nil {
 			return roaring.Bitmap{}, err
+		}
+
+		if bytes.Compare(keys[0], startKey) == 0 {
+			values = values[1:]
 		}
 
 		for _, v := range values {
@@ -114,12 +115,12 @@ var airthmeticExecution = map[string]func(io.Store, string, string, []byte, []by
 
 		keys, values, err := s.ReversePrefixScan(endKey, prefix, 0)
 
-		if bytes.Compare(keys[0], endKey) == 0 {
-			values = values[1:]
-		}
-
 		if len(values) == 0 || err != nil {
 			return roaring.Bitmap{}, err
+		}
+
+		if bytes.Compare(keys[0], endKey) == 0 {
+			values = values[1:]
 		}
 
 		for _, v := range values {
@@ -230,7 +231,7 @@ var airthmeticExecution = map[string]func(io.Store, string, string, []byte, []by
 
 		keysleft, uniqueIDBitmapArray, err := s.ReversePrefixScan(endKey, prefix, 0)
 
-		if err != nil {
+		if len(uniqueIDBitmapArray) == 0 || err != nil {
 			return roaring.Bitmap{}, err
 		}
 
@@ -240,7 +241,7 @@ var airthmeticExecution = map[string]func(io.Store, string, string, []byte, []by
 
 		keysRight, valuesFor, err := s.PrefixScan(endKey, prefix, 0)
 
-		if err != nil {
+		if len(valuesFor) == 0 || err != nil {
 			return roaring.Bitmap{}, err
 		}
 
@@ -249,10 +250,6 @@ var airthmeticExecution = map[string]func(io.Store, string, string, []byte, []by
 		}
 
 		uniqueIDBitmapArray = append(uniqueIDBitmapArray, valuesFor...)
-
-		if len(uniqueIDBitmapArray) == 0 || err != nil {
-			return roaring.Bitmap{}, err
-		}
 
 		for _, v := range uniqueIDBitmapArray {
 			if len(rb.ToArray()) == 0 {
@@ -403,6 +400,7 @@ func findTypeOfValue(value string) (string, []byte) {
 	fmt.Println("VALUE is ", value)
 	datatype, formattedData, err := formatter.FormatData(value)
 	fmt.Println("DATATYPE : ", datatype)
+	fmt.Println("FORMATTED DATE : ", formattedData)
 	if err != nil {
 		panic(err)
 	}
