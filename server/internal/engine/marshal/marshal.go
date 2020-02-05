@@ -24,6 +24,8 @@ func TypeMarshal(typeOfData string, valueInterface interface{}) []byte {
 		return marshalWords(valueInterface)
 
 	} else if typeOfData == "time.Time" {
+		fmt.Println("date entering DB : ", valueInterface.(time.Time))
+
 		return marshalDateTime(valueInterface)
 
 	} else if typeOfData == "bool" {
