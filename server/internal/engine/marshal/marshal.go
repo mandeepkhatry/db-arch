@@ -1,16 +1,12 @@
 package marshal
 
 import (
+	"db-arch/server/internal/def"
 	"encoding/binary"
 	"fmt"
 	"math"
 	"strings"
 	"time"
-)
-
-//Integer Range
-const (
-	INT_RANGE = int(32768)
 )
 
 //TypeMarshal takes type of data and value interface as inputs and returns type specific data  byte
@@ -43,7 +39,7 @@ func marshalInt(valueInterface interface{}) []byte {
 	buf := make([]byte, 8)
 	//32768 represents range
 	//Make sure to observe this range
-	numToConvert := int(valueInterface.(int)) + INT_RANGE
+	numToConvert := int(valueInterface.(int)) + def.INT_RANGE
 	binary.BigEndian.PutUint32(buf, uint32(numToConvert))
 	return buf
 }
