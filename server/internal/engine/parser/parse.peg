@@ -71,7 +71,7 @@ GETCONDITION <- cf:SelectCondition _ cx:SelectConditionRest*{
     return cond,nil 
 }
 
-SelectCondition <- token:(LEFT_PARENTHESIS_TOKEN / AND_OPERATOR / OR_OPERATOR / NOT_OPERATOR / RIGHT_PARENTHESIS_TOKEN / PARSECONDITION){
+SelectCondition <- token:(LEFT_PARENTHESIS_TOKEN / AND_OPERATOR / OR_OPERATOR / NOT_OPERATOR / RIGHT_PARENTHESIS_TOKEN / PARSECONDITION / PARSECOMPOSITECONDITION){
     
     conditionStr:=""
     switch v:=token.(type){
@@ -139,13 +139,46 @@ SelectFieldValue <- f1:RetrieveFieldVal fx:RetrieveFieldRest*   {
     return fieldVal,nil 
 }
 
-RetrieveFieldVal<-("\u0022" (_ ALPHA_NUM_TOKEN _)* "\u0022" / [a-z0-9]+ / [0-9]+) {
+RetrieveFieldVal<-("\u0022" (_ ALPHA_NUM_TOKEN _)* "\u0022" / [a-z0-9]+ / [0-9.-]+) {
     return string(c.text),nil 
 }
 
 RetrieveFieldRest <- f:RetrieveFieldVal _ {
     return f.(string),nil 
 }
+
+PARSECOMPOSITECONDITION <- _ "\u007B" _ comp:SelectCompositeCondition _ compx:SelectCompositeConditionRest* _ "\u007D"{
+    fmt.Println("comp:",comp)
+    fmt.Println("compx:",compx)
+    compositeCond:=comp.(string)
+    for _,v:=range compx.([]interface{}){
+        compositeCond+=","+v.(string)
+    }
+    return compositeCond,nil
+}
+
+SelectCompositeCondition<-fname:SelectFieldName _ op:SelectOperator _ fvalue:SelectFieldValue{
+    //fmt.Println("[[CONDITION]]",reflect.TypeOf(fname),reflect.TypeOf(op),reflect.TypeOf(fvalue))
+
+    operatorStr:=""
+    switch v:=op.(type){
+        case []uint8:
+            tmpStr:=""
+            for _,val:=range v{
+                tmpStr+=string(val)
+            }
+            operatorStr=tmpStr
+        case string:
+            operatorStr=v
+    }
+
+    return fname.(string)+operatorStr+fvalue.(string),nil
+}
+
+SelectCompositeConditionRest <- _ "," _ cx:SelectCompositeCondition{
+    return cx,nil
+}
+
 
 /* ---TOKENS HERE------- */
 

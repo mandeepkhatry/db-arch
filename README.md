@@ -21,6 +21,12 @@ go run client/client.go
 
 ```
 
+
+**Build project**
+```
+make build 
+```
+
 ## API Endpoints
 -----
 ```/documents```  
@@ -52,5 +58,6 @@ Request
 ```
 ./bin/tikv-server --pd="127.0.0.1:2379" --data-dir=tikv --log-file=tikv.log
 ```
+
 
 *Note: use root permission to run tikv cluster*
