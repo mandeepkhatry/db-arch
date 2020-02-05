@@ -50,7 +50,7 @@ func getMACAddress() []byte {
 	}
 
 	addrInBytes := make([]byte, 4)
-	binary.LittleEndian.PutUint32(addrInBytes, uint32(addrInt))
+	binary.BigEndian.PutUint32(addrInBytes, uint32(addrInt))
 	return addrInBytes
 }
 
@@ -58,7 +58,7 @@ func getMACAddress() []byte {
 func getUnixTimestamp() []byte {
 	currentTimestamp := time.Now().UnixNano()
 	timeInBytes := make([]byte, 4)
-	binary.LittleEndian.PutUint32(timeInBytes, uint32(currentTimestamp))
+	binary.BigEndian.PutUint32(timeInBytes, uint32(currentTimestamp))
 	return timeInBytes
 }
 
@@ -72,14 +72,14 @@ func generateRandomCount() []byte {
 	rand.Seed(time.Now().UnixNano())
 	count := rand.Uint32()
 	countInBytes := make([]byte, 4)
-	binary.LittleEndian.PutUint32(countInBytes, uint32(count))
+	binary.BigEndian.PutUint32(countInBytes, uint32(count))
 	return countInBytes
 }
 
 //getProcessID returns 2 byte current processID
 func getProcessID() []byte {
 	processIDInBytes := make([]byte, 2)
-	binary.LittleEndian.PutUint16(processIDInBytes, uint16(os.Getpid()))
+	binary.BigEndian.PutUint16(processIDInBytes, uint16(os.Getpid()))
 	return processIDInBytes
 }
 

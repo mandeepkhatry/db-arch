@@ -29,7 +29,7 @@ func (e *Engine) IndexDocument(s io.Store, collectionID []byte,
 	*/
 	fmt.Println("TYPE OF DATA is ", typeOfData)
 	//convert uniqueID into uint32
-	num := binary.LittleEndian.Uint32(uniqueID)
+	num := binary.BigEndian.Uint32(uniqueID)
 	fmt.Println("[[index.go]]uniqueID in int32:", num)
 	arrKeys := make([][]byte, 0)
 	arrValues := make([][]byte, 0)
@@ -91,56 +91,56 @@ func (e *Engine) IndexDocument(s io.Store, collectionID []byte,
 		} else {
 			//for compound index
 			/*
-				parse filedname,type for each compound condition and create compound index
+				parse fieldname,type for each compound condition and create compound index
 			*/
 
 			indexKey := def.INDEX_KEY + string(e.DBID) + ":" + string(collectionID) + ":" + string(e.NamespaceID)
 
-			rb := roaring.New()
 			for _, fieldToIndex := range indexStrArr {
 				fieldValue := newData[fieldToIndex]
 				indexKey += ":" + fieldToIndex + ":" + typeOfData[fieldToIndex] + ":" + string(fieldValue)
+			}
+			//retrieve set of IDs for each single key and perform AND operation on them
+			//singleIndexKey := []byte(def.INDEX_KEY + string(e.DBID) + ":" + string(collectionID) + ":" + string(e.NamespaceID) + ":" + fieldToIndex + ":" + typeOfData[fieldToIndex] + ":" + string(fieldValue))
 
-				//retrieve set of IDs for each single key and perform AND operation on them
-				singleIndexKey := []byte(def.INDEX_KEY + string(e.DBID) + ":" + string(collectionID) + ":" + string(e.NamespaceID) + ":" + fieldToIndex + ":" + typeOfData[fieldToIndex] + ":" + string(fieldValue))
+			val, err := s.Get([]byte(indexKey))
+			if err != nil {
+				return [][]byte{}, [][]byte{}, err
+			}
 
-				val, err := s.Get(singleIndexKey)
+			if len(val) != 0 {
+				tmp := roaring.New()
+				err := tmp.UnmarshalBinary(val)
 				if err != nil {
 					return [][]byte{}, [][]byte{}, err
 				}
+				tmpArr := tmp.ToArray()
+				tmpArr = append(tmpArr, num)
 
-				if len(val) != 0 {
-					if len(rb.ToArray()) == 0 {
-						tmp := roaring.New()
-						err = tmp.UnmarshalBinary(val)
-						if err != nil {
-							return [][]byte{}, [][]byte{}, err
-						}
-						rb = tmp
-					} else {
-
-						tmp := roaring.New()
-						err = tmp.UnmarshalBinary(val)
-						if err != nil {
-							return [][]byte{}, [][]byte{}, err
-						}
-						rb = roaring.FastAnd(rb, tmp)
-
-					}
-				}
-
+				rb := roaring.BitmapOf(tmpArr...)
 				marshaledRB, err := rb.MarshalBinary()
 				if err != nil {
 					return [][]byte{}, [][]byte{}, err
 				}
-				fmt.Println("indexkeycompound:", indexKey)
+
+				arrKeys = append(arrKeys, []byte(indexKey))
+				arrValues = append(arrValues, marshaledRB)
+
+			} else {
+				rb := roaring.BitmapOf(num)
+				marshaledRB, err := rb.MarshalBinary()
+				if err != nil {
+					return [][]byte{}, [][]byte{}, err
+				}
+
 				arrKeys = append(arrKeys, []byte(indexKey))
 				arrValues = append(arrValues, marshaledRB)
 
 			}
-
 		}
+
 	}
+
 	fmt.Println("[[index.go]]arrKeys:", arrKeys)
 	fmt.Println("[[index.go]]arrValues:", arrValues)
 	return arrKeys, arrValues, nil

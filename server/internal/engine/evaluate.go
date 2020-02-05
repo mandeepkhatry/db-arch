@@ -297,6 +297,9 @@ func (e *Engine) EvaluatePostFix(s io.Store, px []string, collectionID []byte) (
 			exp1 := tempStack.Pop()
 			exp2 := tempStack.Pop()
 			exp1Type := fmt.Sprintf("%T", exp1)
+			fmt.Println("exp1:", exp1)
+			fmt.Println("exp2:", exp2)
+
 			fmt.Println("Data type : ", exp1Type)
 			exp2Type := fmt.Sprintf("%T", exp2)
 			fmt.Println("Data type : ", exp2Type)
@@ -344,23 +347,49 @@ func (e *Engine) EvaluateExpression(s io.Store, exp string, collectionID []byte)
 		1. Parse expression to find fieldname, operator, fieldvalue, fieldtype
 		2. Based on operator, carry out operations
 	*/
+	compositeCondArr := strings.Split(exp, ",")
+	if len(compositeCondArr) == 1 {
+		//parse fieldname,operator,fieldvalue
+		fieldname, operator, fieldvalue := parseExpressionFields(exp)
+		//get fieldtype with ordered value
+		typeOfData, byteOrderedData := findTypeOfValue(fieldvalue)
+		fmt.Println("[[evaluate.go]]typeOfData,byteOrderedData:", typeOfData, byteOrderedData)
 
-	//parse fieldname,operator,fieldvalue
-	fieldname, operator, fieldvalue := parseExpressionFields(exp)
-	//get fieldtype with ordered value
-	typeOfData, byteOrderedData := findTypeOfValue(fieldvalue)
-	fmt.Println("[[evaluate.go]]typeOfData,byteorderedData:", typeOfData, byteOrderedData)
+		fmt.Println("[[evaluate.go]]131]", e.DBID, e.NamespaceID, collectionID)
 
-	fmt.Println("[[evaluate.go]]131]", e.DBID, e.NamespaceID, collectionID)
+		fmt.Println("Operator is ", operator)
+		rb, err := airthmeticExecution[operator](s, fieldname, typeOfData, byteOrderedData, e.DBID, e.NamespaceID, collectionID)
 
-	fmt.Println("Operator is ", operator)
-	rb, err := airthmeticExecution[operator](s, fieldname, typeOfData, byteOrderedData, e.DBID, e.NamespaceID, collectionID)
+		if err != nil {
+			return roaring.Bitmap{}, err
+		}
 
-	if err != nil {
-		return roaring.Bitmap{}, err
+		return rb, nil
+	} else {
+		//TODO: discuss logic here
+		//for composite condition
+		indexKey := def.INDEX_KEY + string(e.DBID) + ":" + string(collectionID) + ":" + string(e.NamespaceID)
+		//create index key first
+		for _, cond := range compositeCondArr {
+			fieldname, _, fieldvalue := parseExpressionFields(cond)
+			typeOfData, byteOrderedData := findTypeOfValue(fieldvalue)
+			indexKey += ":" + fieldname + ":" + typeOfData + ":" + string(byteOrderedData)
+		}
+
+		uniqueIDBitmapArray, err := s.Get([]byte(indexKey))
+		if len(uniqueIDBitmapArray) == 0 || err != nil {
+			return roaring.Bitmap{}, err
+		}
+
+		rb := roaring.New()
+		err = rb.UnmarshalBinary(uniqueIDBitmapArray)
+		if err != nil {
+			return roaring.Bitmap{}, err
+		}
+		fmt.Println("roaring:", rb)
+		return *rb, nil
 	}
 
-	return rb, nil
 }
 
 func parseExpressionFields(exp string) (string, string, string) {

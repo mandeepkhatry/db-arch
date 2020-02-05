@@ -69,7 +69,7 @@ func (e *Engine) GenerateDBIdentifier(s io.Store, dbname []byte) ([]byte, error)
 	if len(val) == 0 {
 		identifier := make([]byte, 2)
 
-		binary.LittleEndian.PutUint16(identifier, def.DBIDENTIFIER_INITIALCOUNT)
+		binary.BigEndian.PutUint16(identifier, def.DBIDENTIFIER_INITIALCOUNT)
 		err := s.Put([]byte(def.META_DBIDENTIFIER), identifier)
 		if err != nil {
 			return []byte{}, err
@@ -77,8 +77,8 @@ func (e *Engine) GenerateDBIdentifier(s io.Store, dbname []byte) ([]byte, error)
 
 		return identifier, nil
 	} else {
-		identifier := binary.LittleEndian.Uint16(val)
-		binary.LittleEndian.PutUint16(val, uint16(identifier+1))
+		identifier := binary.BigEndian.Uint16(val)
+		binary.BigEndian.PutUint16(val, uint16(identifier+1))
 
 		err := s.Put([]byte(def.META_DBIDENTIFIER), val)
 		if err != nil {
@@ -120,7 +120,9 @@ func (e *Engine) GetDBIdentifier(s io.Store, dbname []byte) ([]byte, error) {
 
 		return identifier, nil
 	} else {
-		//identifier := binary.LittleEndian.Uint16(val)
+		//identifier := binary.
+		//
+		//LittleEndian.Uint16(val)
 		return val, nil
 	}
 }
@@ -150,15 +152,15 @@ func (e *Engine) GenerateCollectionIdentifier(s io.Store, collectionname []byte)
 	}
 	if len(val) == 0 {
 		identifier := make([]byte, 4)
-		binary.LittleEndian.PutUint32(identifier, def.COLLECTIONIDENTIFIER_INITIALCOUNT)
+		binary.BigEndian.PutUint32(identifier, def.COLLECTIONIDENTIFIER_INITIALCOUNT)
 		err := s.Put([]byte(def.META_COLLECTIONIDENTIFIER), identifier)
 		if err != nil {
 			return []byte{}, err
 		}
 		return identifier, nil
 	} else {
-		identifier := binary.LittleEndian.Uint32(val)
-		binary.LittleEndian.PutUint32(val, uint32(identifier+1))
+		identifier := binary.BigEndian.Uint32(val)
+		binary.BigEndian.PutUint32(val, uint32(identifier+1))
 		err := s.Put([]byte(def.META_COLLECTIONIDENTIFIER), val)
 		if err != nil {
 			return []byte{}, err
@@ -227,15 +229,15 @@ func (e *Engine) GenerateNamespaceIdentifier(s io.Store, namespace []byte) ([]by
 	//TODO: move this logic to separate init file for performance
 	if len(val) == 0 {
 		identifier := make([]byte, 4)
-		binary.LittleEndian.PutUint32(identifier, def.NAMESPACEIDENTIFIER_INITIALCOUNT)
+		binary.BigEndian.PutUint32(identifier, def.NAMESPACEIDENTIFIER_INITIALCOUNT)
 		err := s.Put([]byte(def.META_NAMESPACEIDENTIFIER), identifier)
 		if err != nil {
 			return []byte{}, err
 		}
 		return identifier, nil
 	} else {
-		identifier := binary.LittleEndian.Uint32(val)
-		binary.LittleEndian.PutUint32(val, uint32(identifier+1))
+		identifier := binary.BigEndian.Uint32(val)
+		binary.BigEndian.PutUint32(val, uint32(identifier+1))
 		err := s.Put([]byte(def.META_NAMESPACEIDENTIFIER), val)
 		if err != nil {
 			return []byte{}, err
@@ -314,17 +316,17 @@ func (e *Engine) GenerateUniqueID(s io.Store, collectionID []byte) ([]byte, erro
 	if len(idCounterInBytes) == 0 {
 		//create 4 byte identifier for each document
 		counterByte := make([]byte, 4)
-		binary.LittleEndian.PutUint32(counterByte, def.UNIQUE_ID_INITIALCOUNT)
+		binary.BigEndian.PutUint32(counterByte, def.UNIQUE_ID_INITIALCOUNT)
 		err := s.Put(idKey, counterByte)
 		if err != nil {
 			return []byte{}, err
 		}
 		return counterByte, nil
 	} else {
-		currentCount := binary.LittleEndian.Uint32(idCounterInBytes)
+		currentCount := binary.BigEndian.Uint32(idCounterInBytes)
 		counterByte := make([]byte, 4)
 		//increase count by 1 and write to db
-		binary.LittleEndian.PutUint32(counterByte, (currentCount + 1))
+		binary.BigEndian.PutUint32(counterByte, (currentCount + 1))
 		//insert
 		err := s.Put(idKey, counterByte)
 		if err != nil {
@@ -547,7 +549,7 @@ func (e *Engine) SearchDocument(s io.Store, collection string,
 	for i := 0; i < searchKeyLength; i++ {
 		uniqueIDByte := make([]byte, 4)
 
-		binary.LittleEndian.PutUint32(uniqueIDByte, uniqueIDArr[i])
+		binary.BigEndian.PutUint32(uniqueIDByte, uniqueIDArr[i])
 		documentKeys := []byte(string(e.DBID) + ":" + string(collectionID) + ":" + string(e.NamespaceID) + ":" + string(uniqueIDByte))
 		searchKeys = append(searchKeys, documentKeys)
 	}
