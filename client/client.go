@@ -233,7 +233,7 @@ func main() {
 
 	fmt.Println("-------------------Starting client-------------------")
 	router.HandleFunc("/documents", postDocument(c1)).Methods("POST")
-	router.HandleFunc("/query", queryDocument(c2)).Methods("GET")
+	router.HandleFunc("/query", queryDocument(c2)).Methods("POST")
 	router.HandleFunc("/connection", connectDatabase(c3)).Methods("POST")
 	http.ListenAndServe(":8000", router)
 
