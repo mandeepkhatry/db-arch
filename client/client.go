@@ -34,7 +34,7 @@ func postDocument(c document.DocumentServiceClient) func(http.ResponseWriter, *h
 
 		if err != nil {
 			w.Header().Add("Content-Type", "application/json")
-			w.WriteHeader(200)
+			w.WriteHeader(404)
 			postResponse.Message = "document not created"
 			metaResponse.Status = false
 			metaResponse.Description = "not created"
@@ -66,7 +66,7 @@ func postDocument(c document.DocumentServiceClient) func(http.ResponseWriter, *h
 			postResponse.Metadata = metaResponse
 
 			w.Header().Add("Content-Type", "application/json")
-			w.WriteHeader(200)
+			w.WriteHeader(404)
 			json.NewEncoder(w).Encode(postResponse)
 			return
 
@@ -115,7 +115,7 @@ func queryDocument(c query.QueryServiceClient) func(http.ResponseWriter, *http.R
 			queryResponse.Metadata.Code = codeFieldSplit[1]
 			queryResponse.Metadata.Status = false
 			w.Header().Add("Content-Type", "application/json")
-			w.WriteHeader(200)
+			w.WriteHeader(404)
 			json.NewEncoder(w).Encode(queryResponse)
 			return
 
@@ -152,7 +152,7 @@ func queryDocument(c query.QueryServiceClient) func(http.ResponseWriter, *http.R
 
 		}
 		w.Header().Add("Content-Type", "application/json")
-		w.WriteHeader(200)
+		w.WriteHeader(404)
 		queryResponse.Result = nil
 		queryResponse.Metadata.Description = "results not found"
 		queryResponse.Metadata.Code = ""
@@ -233,7 +233,7 @@ func main() {
 
 	fmt.Println("-------------------Starting client-------------------")
 	router.HandleFunc("/documents", postDocument(c1)).Methods("POST")
-	router.HandleFunc("/query", queryDocument(c2)).Methods("POST")
+	router.HandleFunc("/query", queryDocument(c2)).Methods("GET")
 	router.HandleFunc("/connection", connectDatabase(c3)).Methods("POST")
 	http.ListenAndServe(":8000", router)
 
