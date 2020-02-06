@@ -210,7 +210,8 @@ func main() {
 
 	//Starting GRPC Client
 	fmt.Println("-------------------Starting GRPC client-------------------")
-	conn, err := grpc.Dial(grpcServerTarget, grpc.WithInsecure())
+	//set 20MB max message size for grpc
+	conn, err := grpc.Dial(grpcServerTarget, grpc.WithInsecure(), grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(20*1024*1024), grpc.MaxCallSendMsgSize(512*1024*1024)))
 
 	//Register client
 	c1 := document.NewDocumentServiceClient(conn)
