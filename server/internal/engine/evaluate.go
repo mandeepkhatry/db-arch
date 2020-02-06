@@ -141,6 +141,13 @@ var arithmeticExecution = map[string]func(io.Store, string, string, []byte, []by
 			return roaring.Bitmap{}, err
 		}
 
+		fmt.Println("ENDKEY : ", string(endKey))
+		fmt.Println("PREFIX : ", string(prefix))
+
+		for _, v := range keys {
+			fmt.Println("KEYS ", string(v))
+		}
+
 		if bytes.Compare(keys[0], endKey) == 0 {
 			values = values[1:]
 		}

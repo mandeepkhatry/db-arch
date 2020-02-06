@@ -261,7 +261,6 @@ func (s *StoreClient) ReverseScan(startKey []byte, endKey []byte, limit int) ([]
 	}
 
 	opts := badger.DefaultIteratorOptions
-	opts.PrefetchSize = 10
 	opts.Reverse = true
 	counter := 0
 	err := s.DB.View(func(txn *badger.Txn) error {
@@ -365,7 +364,6 @@ func (s *StoreClient) ReversePrefixScan(endKey []byte, prefix []byte, limit int)
 	keys := make([][]byte, 0)
 	values := make([][]byte, 0)
 	opts := badger.DefaultIteratorOptions
-	opts.PrefetchSize = 10
 	opts.Reverse = true
 
 	if limit == 0 {
@@ -373,10 +371,11 @@ func (s *StoreClient) ReversePrefixScan(endKey []byte, prefix []byte, limit int)
 		err := s.DB.View(func(txn *badger.Txn) error {
 			it := txn.NewIterator(opts)
 			defer it.Close()
-
+			fmt.Println("INSIDE db END KEY ", string(endKey))
 			for it.Seek(endKey); it.ValidForPrefix(prefix); it.Next() {
 				item := it.Item()
 				k := item.Key()
+				fmt.Println("Each KEY ", string(endKey))
 				val, err := item.ValueCopy(nil)
 				if err != nil {
 					return err
@@ -386,13 +385,17 @@ func (s *StoreClient) ReversePrefixScan(endKey []byte, prefix []byte, limit int)
 				values = append(values, val)
 				counter += 1
 
+				fmt.Println("KEYS", string(keys[0]))
+
 			}
+			fmt.Println("KEYS", string(keys[0]))
 			return nil
 		})
 
 		if err != nil {
 			return [][]byte{}, [][]byte{}, err
 		}
+		fmt.Println("Returned key ", string(keys[0]))
 		return keys, values, nil
 	} else {
 		//if limit is not set to zero, scan in reverse for limit x
@@ -425,4 +428,6 @@ func (s *StoreClient) ReversePrefixScan(endKey []byte, prefix []byte, limit int)
 		}
 		return keys, values, nil
 	}
+
+	return [][]byte{}, [][]byte{}, nil
 }
