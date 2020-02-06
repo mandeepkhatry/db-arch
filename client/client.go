@@ -292,7 +292,7 @@ func sendQuery(c query.QueryServiceClient, d model.Query) (*query.QueryTransferR
 	}
 
 	fmt.Println("----------------QUERY RESPONSE----------------")
-	fmt.Println("Query recieved : ", res)
+	//fmt.Println("Query recieved : ", res)
 	return res, nil
 }
 

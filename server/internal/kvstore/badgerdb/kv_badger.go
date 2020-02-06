@@ -90,7 +90,7 @@ func (s *StoreClient) PutBatch(keys [][]byte, values [][]byte) error {
 
 //Get reads value for given key
 func (s *StoreClient) Get(key []byte) ([]byte, error) {
-	fmt.Println("[[Get]] key ", string(key))
+	//fmt.Println("[[Get]] key ", string(key))
 
 	if len(key) == 0 {
 		return []byte{}, def.KEY_EMPTY
@@ -119,7 +119,7 @@ func (s *StoreClient) Get(key []byte) ([]byte, error) {
 		return []byte{}, err
 	}
 
-	fmt.Println("[GET] value:", value)
+	//fmt.Println("[GET] value:", value)
 	return value, nil
 }
 
@@ -371,11 +371,11 @@ func (s *StoreClient) ReversePrefixScan(endKey []byte, prefix []byte, limit int)
 		err := s.DB.View(func(txn *badger.Txn) error {
 			it := txn.NewIterator(opts)
 			defer it.Close()
-			fmt.Println("INSIDE db END KEY ", string(endKey))
+			//fmt.Println("INSIDE db END KEY ", string(endKey))
 			for it.Seek(endKey); it.ValidForPrefix(prefix); it.Next() {
 				item := it.Item()
 				k := item.Key()
-				fmt.Println("Each KEY ", string(endKey))
+				//fmt.Println("Each KEY ", string(endKey))
 				val, err := item.ValueCopy(nil)
 				if err != nil {
 					return err
@@ -385,17 +385,17 @@ func (s *StoreClient) ReversePrefixScan(endKey []byte, prefix []byte, limit int)
 				values = append(values, val)
 				counter += 1
 
-				fmt.Println("KEYS", string(keys[0]))
+				//fmt.Println("KEYS", string(keys[0]))
 
 			}
-			fmt.Println("KEYS", string(keys[0]))
+			//fmt.Println("KEYS", string(keys[0]))
 			return nil
 		})
 
 		if err != nil {
 			return [][]byte{}, [][]byte{}, err
 		}
-		fmt.Println("Returned key ", string(keys[0]))
+		//fmt.Println("Returned key ", string(keys[0]))
 		return keys, values, nil
 	} else {
 		//if limit is not set to zero, scan in reverse for limit x

@@ -540,8 +540,10 @@ func (e *Engine) SearchDocument(s io.Store, collection string,
 	}
 
 	resultRoaring := rb.(roaring.Bitmap)
-	fmt.Println("FINAL RB is ", resultRoaring.ToArray())
+	//fmt.Println("FINAL RB is ", resultRoaring.ToArray())
 	//retrieve document keys for search
+	fmt.Println("result roaring size -->", resultRoaring.GetSizeInBytes())
+	fmt.Println("length of roaring -->", len(resultRoaring.ToArray()))
 	searchKeys := make([][]byte, 0)
 	searchKeyLength := len(resultRoaring.ToArray())
 	uniqueIDArr := resultRoaring.ToArray() //get all IDs

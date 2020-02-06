@@ -30,7 +30,7 @@ func (e *Engine) IndexDocument(s io.Store, collectionID []byte,
 	fmt.Println("TYPE OF DATA is ", typeOfData)
 	//convert uniqueID into uint32
 	num := binary.BigEndian.Uint32(uniqueID)
-	fmt.Println("[[index.go]]uniqueID in int32:", num)
+	//fmt.Println("[[index.go]]uniqueID in int32:", num)
 	arrKeys := make([][]byte, 0)
 	arrValues := make([][]byte, 0)
 
@@ -141,7 +141,7 @@ func (e *Engine) IndexDocument(s io.Store, collectionID []byte,
 
 	}
 
-	fmt.Println("[[index.go]]arrKeys:", arrKeys)
-	fmt.Println("[[index.go]]arrValues:", arrValues)
+	//fmt.Println("[[index.go]]arrKeys:", arrKeys)
+	//fmt.Println("[[index.go]]arrValues:", arrValues)
 	return arrKeys, arrValues, nil
 }

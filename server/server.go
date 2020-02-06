@@ -89,11 +89,11 @@ func (*server) QueryTransfer(ctx context.Context, req *query.QueryTransferReques
 	}
 
 	rawQuery := req.GetRequest().GetQuery()
-	print("Recieved raw query :", rawQuery)
+	//print("Recieved raw query :", rawQuery)
 
 	collection, postfixQuery, err := parser.ParseQuery(rawQuery)
-	fmt.Println("[[server.go/collection]]", collection)
-	fmt.Println("[[server.go/postfixQuery]]", postfixQuery)
+	//fmt.Println("[[server.go/collection]]", collection)
+	//fmt.Println("[[server.go/postfixQuery]]", postfixQuery)
 	if err != nil {
 		res := &query.QueryTransferResponse{}
 		return res, err
@@ -110,7 +110,7 @@ func (*server) QueryTransfer(ctx context.Context, req *query.QueryTransferReques
 		statusCode := def.ERRTYPE[err]
 		return &query.QueryTransferResponse{}, status.Error(statusCode, err.Error())
 	}
-	fmt.Println("[[server.go]]resultArray", resultArray)
+	//fmt.Println("[[server.go]]resultArray", resultArray)
 	response := make([]*query.Response, 0)
 
 	for _, v := range resultArray {
