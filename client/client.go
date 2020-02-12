@@ -235,7 +235,7 @@ func main() {
 		subject := m.Subject
 		nextSub := strings.Split(subject, ".")[1]
 		switch nextSub {
-		case "send":
+		case "insertdocument":
 			doc := document.Document{}
 			err := proto.Unmarshal(m.Data, &doc)
 			if err != nil {
@@ -245,7 +245,8 @@ func main() {
 			_, err = sendDocument(c1, doc)
 
 			if err != nil {
-				nc.Publish(m.Reply, []byte("document not created"))
+				desc := strings.Split(err.Error(), " desc = ")[1]
+				nc.Publish(m.Reply, []byte(desc))
 			} else {
 				nc.Publish(m.Reply, []byte("document created"))
 			}
@@ -268,7 +269,7 @@ func main() {
 				nc.Publish(m.Reply, []byte(res.GetResponse()))
 			}
 
-		case "query":
+		case "querydocument":
 			inquery := query.Query{}
 			err := proto.Unmarshal(m.Data, &inquery)
 			if err != nil {
