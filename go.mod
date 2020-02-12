@@ -16,6 +16,8 @@ require (
 	github.com/grpc-ecosystem/go-grpc-middleware v1.1.0 // indirect
 	github.com/grpc-ecosystem/grpc-gateway v1.12.1 // indirect
 	github.com/joho/godotenv v1.3.0
+	github.com/nats-io/nats-server/v2 v2.1.4 // indirect
+	github.com/nats-io/nats.go v1.9.1
 	github.com/onsi/ginkgo v1.11.0 // indirect
 	github.com/onsi/gomega v1.8.1 // indirect
 	github.com/pingcap/kvproto v0.0.0-20200103101955-7ca20c9dda49 // indirect
