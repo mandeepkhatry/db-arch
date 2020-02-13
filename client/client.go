@@ -231,6 +231,8 @@ func main() {
 
 	nc, err = nats.Connect("0.0.0.0:4222")
 
+	fmt.Println(nc.ConnectedAddr())
+
 	nc.Subscribe("db.*", func(m *nats.Msg) {
 		subject := m.Subject
 		nextSub := strings.Split(subject, ".")[1]
@@ -248,9 +250,11 @@ func main() {
 				desc := strings.Split(err.Error(), " desc = ")[1]
 				nc.Publish(m.Reply, []byte(desc))
 			} else {
-				nc.Publish(m.Reply, []byte("document created"))
+				desc := strings.Split(err.Error(), " desc = ")[1]
+				nc.Publish(m.Reply, []byte(desc))
 			}
 		case "connect":
+
 			con := connection.Connection{}
 			err := proto.Unmarshal(m.Data, &con)
 			if err != nil {
@@ -283,11 +287,11 @@ func main() {
 
 			if err != nil {
 				nc.Publish(m.Reply, []byte(strings.Split(err.Error(), "desc = ")[1]))
+			} else if len(res.GetResponse()) < 0 {
+				nc.Publish(m.Reply, []byte(strings.Split(err.Error(), "desc = ")[1]))
 			} else {
-
 				results, _ := proto.Marshal(res)
 				nc.Publish(m.Reply, results)
-
 			}
 
 		}
