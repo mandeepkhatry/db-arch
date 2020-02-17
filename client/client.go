@@ -261,7 +261,7 @@ func main() {
 				Database:  con.GetDatabase(),
 				Namespace: con.GetNamespace(),
 			}
-
+			fmt.Println("received connection request")
 			res, err := sendConnection(c3, data)
 
 			if err != nil {

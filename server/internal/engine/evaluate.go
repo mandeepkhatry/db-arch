@@ -324,9 +324,9 @@ var arithmeticExecution = map[string]func(io.Store, string, string, []byte, []by
 }
 
 //EvaluatePostFix evaluates postfix expression returns result
-func (e *Engine) EvaluatePostFix(s io.Store, px []string, collectionID []byte) (interface{}, error) {
+func (e *Engine) EvaluatePostFix(px []string, collectionID []byte) (interface{}, error) {
 	if len(px) == 1 {
-		rb, err := e.EvaluateExpression(s, px[0], collectionID)
+		rb, err := e.EvaluateExpression(px[0], collectionID)
 		if err != nil {
 			var tmp interface{}
 			return tmp, err
@@ -356,7 +356,7 @@ func (e *Engine) EvaluatePostFix(s io.Store, px []string, collectionID []byte) (
 
 			if exp1Type == "string" {
 				//TODO: handle here
-				rb1, err = e.EvaluateExpression(s, exp1.(string), collectionID)
+				rb1, err = e.EvaluateExpression(exp1.(string), collectionID)
 				if err != nil {
 					var tmp interface{}
 					return tmp, err
@@ -366,7 +366,7 @@ func (e *Engine) EvaluatePostFix(s io.Store, px []string, collectionID []byte) (
 			}
 
 			if exp2Type == "string" {
-				rb2, err = e.EvaluateExpression(s, exp2.(string), collectionID)
+				rb2, err = e.EvaluateExpression(exp2.(string), collectionID)
 				if err != nil {
 					var tmp interface{}
 					return tmp, err
@@ -388,7 +388,7 @@ func (e *Engine) EvaluatePostFix(s io.Store, px []string, collectionID []byte) (
 }
 
 //EvaluateExpression takes in expression and returns roaring bitmap as result
-func (e *Engine) EvaluateExpression(s io.Store, exp string, collectionID []byte) (roaring.Bitmap, error) {
+func (e *Engine) EvaluateExpression(exp string, collectionID []byte) (roaring.Bitmap, error) {
 	/*
 		1. Parse expression to find fieldname, operator, fieldvalue, fieldtype
 		2. Based on operator, carry out operations
@@ -404,7 +404,7 @@ func (e *Engine) EvaluateExpression(s io.Store, exp string, collectionID []byte)
 		//fmt.Println("[[evaluate.go]]131]", e.DBID, e.NamespaceID, collectionID)
 
 		//fmt.Println("Operator is ", operator)
-		rb, err := arithmeticExecution[operator](s, fieldname, typeOfData, byteOrderedData, e.DBID, e.NamespaceID, collectionID, []byte{}, []byte{})
+		rb, err := arithmeticExecution[operator](e.Store, fieldname, typeOfData, byteOrderedData, e.DBID, e.NamespaceID, collectionID, []byte{}, []byte{})
 
 		if err != nil {
 			return roaring.Bitmap{}, err
@@ -434,7 +434,7 @@ func (e *Engine) EvaluateExpression(s io.Store, exp string, collectionID []byte)
 			lastOperator = operator
 		}
 
-		rb, err := arithmeticExecution[lastOperator](s, "", "", []byte{}, e.DBID, e.NamespaceID, collectionID, []byte(indexKey), []byte(prefix))
+		rb, err := arithmeticExecution[lastOperator](e.Store, "", "", []byte{}, e.DBID, e.NamespaceID, collectionID, []byte(indexKey), []byte(prefix))
 		if err != nil {
 			return roaring.Bitmap{}, err
 		}

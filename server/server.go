@@ -9,7 +9,6 @@ import (
 	"db-arch/server/internal/engine"
 	"db-arch/server/internal/engine/parser"
 	"db-arch/server/internal/kvstore"
-	"db-arch/server/io"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -22,9 +21,6 @@ import (
 	"google.golang.org/grpc/reflection"
 	"google.golang.org/grpc/status"
 )
-
-//create Store interface
-var store io.Store
 
 //Engine
 var eng engine.Engine
@@ -52,7 +48,7 @@ func (*server) DocumentTransfer(ctx context.Context, req *document.DocumentTrans
 
 	//Response to client
 	res := &document.DocumentTransferResponse{
-		Response: "document recieved by server",
+		Response: "document received by server",
 	}
 
 	//variables that needs to be fed to database specific functions
@@ -67,7 +63,7 @@ func (*server) DocumentTransfer(ctx context.Context, req *document.DocumentTrans
 		Type Specific data	typeSpecificData	map[string][]byte  <- INDEXING PURPOSE
 	*/
 
-	err := eng.InsertDocument(store, collection, data, indices)
+	err := eng.InsertDocument(collection, data, indices)
 	if err != nil {
 		statusCode := def.ERRTYPE[err]
 		return &document.DocumentTransferResponse{
@@ -99,8 +95,8 @@ func (*server) QueryTransfer(ctx context.Context, req *query.QueryTransferReques
 		return res, err
 	}
 
-	//TODO SearchDocumet contains code of evalation from postfixQuery
-	resultArray, err := eng.SearchDocument(store, collection, postfixQuery)
+	//TODO SearchDocumet contains code of evaluation from postfixQuery
+	resultArray, err := eng.SearchDocument(collection, postfixQuery)
 
 	// if len(resultArray) == 0 {
 	// 	return &query.QueryTransferResponse{}, def.RESULTS_NOT_FOUND
@@ -138,10 +134,13 @@ func (*server) ConnectionTransfer(ctx context.Context, req *connection.Connectio
 	namespace := req.GetRequest().GetNamespace()
 	print("DATABASE , NAMESPACE : ", database, namespace)
 
+	store := kvstore.NewBadgerFactory([]string{}, "./data/badger")
+
 	eng.DBName = database
 	eng.Namespace = namespace
+	eng.Store=store
 	print("----------ConnectDB function calling-----------")
-	err := eng.ConnectDB(store)
+	err := eng.ConnectDB()
 	if err != nil {
 		return &connection.ConnectionTransferResponse{}, status.Error(codes.Aborted, err.Error())
 	}
@@ -154,7 +153,6 @@ func (*server) ConnectionTransfer(ctx context.Context, req *connection.Connectio
 
 func main() {
 	//create a new badger store from factory
-	store = kvstore.NewBadgerFactory([]string{}, "./data/badger")
 
 	//create tikv
 	// store = kvstore.NewTiKVFactory([]string{"127.0.0.1:2379"}, "")

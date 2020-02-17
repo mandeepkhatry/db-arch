@@ -2,7 +2,6 @@ package engine
 
 import (
 	"db-arch/server/internal/def"
-	"db-arch/server/io"
 	"encoding/binary"
 	"fmt"
 	"strings"
@@ -12,7 +11,7 @@ import (
 
 //TODO: verify
 //IndexDocument indexes document in batch
-func (e *Engine) IndexDocument(s io.Store, collectionID []byte,
+func (e *Engine) IndexDocument(collectionID []byte,
 	uniqueID []byte, data map[string][]byte, indices []string) ([][]byte, [][]byte, error) {
 
 	typeOfData, newData := findTypeOfData(data)
@@ -52,7 +51,7 @@ func (e *Engine) IndexDocument(s io.Store, collectionID []byte,
 			fmt.Println("NEW INDEXKEY : ", indexKey)
 
 			//get value for that index key
-			val, err := s.Get(indexKey)
+			val, err := e.Store.Get(indexKey)
 			if err != nil {
 				return [][]byte{}, [][]byte{}, err
 			}
@@ -103,7 +102,7 @@ func (e *Engine) IndexDocument(s io.Store, collectionID []byte,
 			//retrieve set of IDs for each single key and perform AND operation on them
 			//singleIndexKey := []byte(def.INDEX_KEY + string(e.DBID) + ":" + string(collectionID) + ":" + string(e.NamespaceID) + ":" + fieldToIndex + ":" + typeOfData[fieldToIndex] + ":" + string(fieldValue))
 
-			val, err := s.Get([]byte(indexKey))
+			val, err := e.Store.Get([]byte(indexKey))
 			if err != nil {
 				return [][]byte{}, [][]byte{}, err
 			}
