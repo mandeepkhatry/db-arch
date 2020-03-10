@@ -40,7 +40,7 @@ var arithmeticExecution = map[string]func(io.Store, string, string, []byte, []by
 
 	"=": func(s io.Store, fieldName string, fieldType string, byteOrderedValue []byte,
 		dbID []byte, namespaceID []byte, collectionID []byte, compositeIndexKey []byte, compositePrefix []byte) (roaring.Bitmap, error) {
-		//fmt.Println("[[evaluate.go/airthemeticExecution=]]")
+
 		rb := roaring.New()
 
 		fmt.Println("db,collection,namespace-->", dbID, collectionID, namespaceID)
@@ -51,19 +51,19 @@ var arithmeticExecution = map[string]func(io.Store, string, string, []byte, []by
 		} else {
 			indexKey = compositeIndexKey
 		}
-		//fmt.Println("INDEX KEY IS ", string(indexKey))
+
 		uniqueIDBitmapArray, err := s.Get(indexKey)
-		//fmt.Println("[[evaluate.go/uniqueIDBitmapArray]]", uniqueIDBitmapArray)
+
 		if len(uniqueIDBitmapArray) == 0 || err != nil {
 			return roaring.Bitmap{}, err
 		}
 		err = rb.UnmarshalBinary(uniqueIDBitmapArray)
-		//fmt.Println("[[evaluate.go/rb]]", rb)
+
 
 		if err != nil {
 			return roaring.Bitmap{}, err
 		}
-		//fmt.Println("[[evaluate.go/rb]],rb")
+
 		return *rb, nil
 
 	},
@@ -71,7 +71,7 @@ var arithmeticExecution = map[string]func(io.Store, string, string, []byte, []by
 	//TODO: discuss memory related issue here
 	">": func(s io.Store, fieldName string, fieldType string, byteOrderedValue []byte,
 		dbID []byte, namespaceID []byte, collectionID []byte, compositeIndexKey []byte, compositePrefix []byte) (roaring.Bitmap, error) {
-		//fmt.Println("[[evaluate.go/airthmeticExecution>]]")
+
 		rb := roaring.New()
 
 		startKey := []byte{}
@@ -86,7 +86,6 @@ var arithmeticExecution = map[string]func(io.Store, string, string, []byte, []by
 		}
 
 		keys, values, err := s.PrefixScan(startKey, prefix, 0)
-		//fmt.Println("KEYS : ", keys)
 
 		if len(values) == 0 || err != nil {
 			return roaring.Bitmap{}, err
@@ -108,11 +107,8 @@ var arithmeticExecution = map[string]func(io.Store, string, string, []byte, []by
 			if err != nil {
 				return roaring.Bitmap{}, err
 			}
-			//fmt.Println("TEMP RB is ", tempRb)
 			rb = roaring.FastOr(rb, tempRb)
 		}
-
-		//fmt.Println("[[evaluate.go/rb]]", rb)
 
 		return *rb, err
 
@@ -120,8 +116,6 @@ var arithmeticExecution = map[string]func(io.Store, string, string, []byte, []by
 
 	"<": func(s io.Store, fieldName string, fieldType string, byteOrderedValue []byte,
 		dbID []byte, namespaceID []byte, collectionID []byte, compositeIndexKey []byte, compositePrefix []byte) (roaring.Bitmap, error) {
-
-		//fmt.Println("[[evaluate.go/airthmeticExecution<]]")
 		rb := roaring.New()
 
 		endKey := []byte{}
@@ -140,10 +134,6 @@ var arithmeticExecution = map[string]func(io.Store, string, string, []byte, []by
 		if len(values) == 0 || err != nil {
 			return roaring.Bitmap{}, err
 		}
-
-		//fmt.Println("ENDKEY : ", string(endKey))
-		//fmt.Println("PREFIX : ", string(prefix))
-
 		if bytes.Compare(keys[0], endKey) == 0 {
 			values = values[1:]
 		}
@@ -160,11 +150,8 @@ var arithmeticExecution = map[string]func(io.Store, string, string, []byte, []by
 			if err != nil {
 				return roaring.Bitmap{}, err
 			}
-			//fmt.Println("TEMP RB is ", tempRb)
 			rb = roaring.FastOr(rb, tempRb)
 		}
-
-		//fmt.Println("[[evaluate.go/rb]]", rb)
 
 		return *rb, err
 
@@ -186,10 +173,7 @@ var arithmeticExecution = map[string]func(io.Store, string, string, []byte, []by
 			prefix = []byte(def.INDEX_KEY + string(dbID) + ":" + string(collectionID) + ":" + string(namespaceID) + ":" + fieldName + ":" + fieldType + ":")
 		}
 
-		//fmt.Println("STARTKEY", string(startKey))
-		//fmt.Println("PREFIX", string(prefix))
 		_, uniqueIDBitmapArray, err := s.PrefixScan(startKey, prefix, 0)
-		//fmt.Println("UNIQUEID BITMAP ARRAY is ", uniqueIDBitmapArray)
 		if len(uniqueIDBitmapArray) == 0 || err != nil {
 			return roaring.Bitmap{}, err
 		}
@@ -206,11 +190,8 @@ var arithmeticExecution = map[string]func(io.Store, string, string, []byte, []by
 			if err != nil {
 				return roaring.Bitmap{}, err
 			}
-			//fmt.Println("TEMP RB is ", tempRb)
 			rb = roaring.FastOr(rb, tempRb)
 		}
-
-		//fmt.Println("[[evaluate.go/rb]]", rb)
 
 		return *rb, err
 
@@ -251,11 +232,8 @@ var arithmeticExecution = map[string]func(io.Store, string, string, []byte, []by
 			if err != nil {
 				return roaring.Bitmap{}, err
 			}
-			//fmt.Println("TEMP RB is ", tempRb)
 			rb = roaring.FastOr(rb, tempRb)
 		}
-
-		//fmt.Println("[[evaluate.go/rb]]", rb)
 
 		return *rb, err
 
@@ -312,11 +290,8 @@ var arithmeticExecution = map[string]func(io.Store, string, string, []byte, []by
 			if err != nil {
 				return roaring.Bitmap{}, err
 			}
-			//fmt.Println("TEMP RB is ", tempRb)
 			rb = roaring.FastOr(rb, tempRb)
 		}
-
-		//fmt.Println("[[evaluate.go/rb]]", rb)
 
 		return *rb, err
 
@@ -343,12 +318,8 @@ func (e *Engine) EvaluatePostFix(px []string, collectionID []byte) (interface{},
 			exp1 := tempStack.Pop()
 			exp2 := tempStack.Pop()
 			exp1Type := fmt.Sprintf("%T", exp1)
-			//fmt.Println("exp1:", exp1)
-			//fmt.Println("exp2:", exp2)
 
-			//fmt.Println("Data type : ", exp1Type)
 			exp2Type := fmt.Sprintf("%T", exp2)
-			//fmt.Println("Data type : ", exp2Type)
 
 			var rb1 roaring.Bitmap
 			var rb2 roaring.Bitmap
@@ -380,7 +351,6 @@ func (e *Engine) EvaluatePostFix(px []string, collectionID []byte) (interface{},
 		}
 	}
 
-	//fmt.Println("[[evaluate.go]] EVALUATE POSTFIX")
 	result := tempStack.Pop()
 
 	return result, nil
@@ -399,11 +369,6 @@ func (e *Engine) EvaluateExpression(exp string, collectionID []byte) (roaring.Bi
 		fieldname, operator, fieldvalue := parseExpressionFields(exp)
 		//get fieldtype with ordered value
 		typeOfData, byteOrderedData := findTypeOfValue(fieldvalue)
-		//fmt.Println("[[evaluate.go]]typeOfData,byteOrderedData:", typeOfData, byteOrderedData)
-
-		//fmt.Println("[[evaluate.go]]131]", e.DBID, e.NamespaceID, collectionID)
-
-		//fmt.Println("Operator is ", operator)
 		rb, err := arithmeticExecution[operator](e.Store, fieldname, typeOfData, byteOrderedData, e.DBID, e.NamespaceID, collectionID, []byte{}, []byte{})
 
 		if err != nil {
@@ -439,7 +404,6 @@ func (e *Engine) EvaluateExpression(exp string, collectionID []byte) (roaring.Bi
 			return roaring.Bitmap{}, err
 		}
 
-		//fmt.Println("roaring:", rb)
 		return rb, nil
 	}
 
@@ -453,41 +417,10 @@ func parseExpressionFields(exp string) (string, string, string) {
 }
 
 func findTypeOfValue(value string) (string, []byte) {
-	//fmt.Println("VALUE is ", value)
 	datatype, formattedData, err := formatter.FormatData(value)
-	//fmt.Println("DATATYPE : ", datatype)
-	//fmt.Println("FORMATTED DATE : ", formattedData)
 	if err != nil {
 		panic(err)
 	}
-
 	specificDataType := def.ApplicationSpecificType[datatype]
-	//fmt.Println("check")
-
 	return specificDataType, marshal.TypeMarshal(datatype, formattedData)
-
-	//if strings.Contains(value, "'") || strings.Contains(value, "\"") {
-	//	fmt.Println("[[evaluate.go]]findtypeofvalue-string:", value)
-	//	return "string", marshal.TypeMarshal("string", value)
-	//} else if valid.IsInt(value) {
-	//	val, err := strconv.Atoi(value)
-	//	fmt.Println("[[evaluate.go]]err-int:", err)
-	//	fmt.Println("[[evaluate.go]]findtypeofvalue-int:", val)
-	//
-	//	return "int", marshal.TypeMarshal("int", val)
-	//} else if valid.IsFloat(value) {
-	//	val, _ := strconv.ParseFloat(value, 64)
-	//	fmt.Println("[[evaluate.go]]findtypeofvalue-float:", val)
-	//
-	//	return "float", marshal.TypeMarshal("float", val)
-	//} else if value == "true" || value == "false" {
-	//	val, _ := strconv.ParseBool(value)
-	//	return "bool", marshal.TypeMarshal("bool", val)
-	//} else {
-	//	time, _ := time.Parse(time.RFC3339, value)
-	//	if time.String() != "0001-01-01 00:00:00 +0000 UTC" {
-	//		return "datetime", marshal.TypeMarshal("datetime", time)
-	//	}
-	//}
-	//return "new_data_type", []byte{}
 }

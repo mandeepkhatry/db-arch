@@ -33,7 +33,6 @@ type Engine struct {
 
 //ConnectDB initializes engine with DBName, Namespace
 func (e *Engine) ConnectDB() error {
-	fmt.Println("[[ConnectDB]] inside function")
 	dbname := []byte(e.DBName)
 	namespace := []byte(e.Namespace)
 
@@ -197,7 +196,6 @@ func (e *Engine) GetCollectionIdentifier(collection []byte) ([]byte, error) {
 	}
 }
 
-//TODO: verify
 //GetCollectionName returns collection name for given collection identifier
 func (e *Engine) GetCollectionName(collectionIdentifier []byte) (string, error) {
 	if len(collectionIdentifier) == 0 {
@@ -264,12 +262,12 @@ func (e *Engine) GetNamespaceIdentifier(namespace []byte) ([]byte, error) {
 		if err != nil {
 			return []byte{}, err
 		}
-
 		return identifier, nil
-	} else { //else send the value read from db
-		//identifier := binary.LittleEndian.Uint32(val)
-		return val, nil
 	}
+	//else send the value read from db
+	//identifier := binary.LittleEndian.Uint32(val)
+	return val, nil
+
 }
 
 //GetNamespaceName return namespace name with given namespace identifier
@@ -347,7 +345,6 @@ func (e *Engine) GetIdentifiers(database string, collection string,
 	return dbID, collectionID, namespaceID, nil
 }
 
-//TODO: verify
 //SearchIdentifiers retrieves db,collection,namespace identifiers only if they exist
 func (e *Engine) SearchIdentifiers(dbname string, collection string,
 	namespace string) ([]byte, []byte, []byte, error) {
@@ -416,11 +413,7 @@ func (e *Engine) InsertDocument(collection string,
 		return err
 	}
 
-	//insert into db
-	//err = s.Put(key, dataInBytes)
-	//if err != nil {
-	//	return err
-	//}
+
 	keyCache = append(keyCache, key)
 	valueCache = append(valueCache, dataInBytes)
 	//indexer

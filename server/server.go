@@ -95,7 +95,7 @@ func (*server) QueryTransfer(ctx context.Context, req *query.QueryTransferReques
 		return res, err
 	}
 
-	//TODO SearchDocumet contains code of evaluation from postfixQuery
+	//TODO SearchDocument contains code of evaluation from postfixQuery
 	resultArray, err := eng.SearchDocument(collection, postfixQuery)
 
 	// if len(resultArray) == 0 {

@@ -17,6 +17,8 @@ func NewTiKVFactory(pdAddr []string, dbDIR string) io.Store {
 }
 
 //NewBadgerFactory returns badgerdb storeclient as io.Store
+//pdAddr => Placement Driver
+//dbDir => Db Directory
 func NewBadgerFactory(pdAddr []string, dbDIR string) io.Store {
 	badger := &badgerdb.StoreClient{}
 	err := badger.NewClient(pdAddr, dbDIR)
