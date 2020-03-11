@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"db-arch/pb/connection"
 	"db-arch/pb/document"
@@ -9,7 +10,7 @@ import (
 	"db-arch/server/internal/engine"
 	"db-arch/server/internal/engine/parser"
 	"db-arch/server/internal/kvstore"
-	"encoding/json"
+	"encoding/gob"
 	"fmt"
 	"log"
 	"net"
@@ -71,6 +72,7 @@ func (*server) DocumentTransfer(ctx context.Context, req *document.DocumentTrans
 		}, status.Error(statusCode, err.Error())
 	}
 
+	fmt.Println("RESPONSE : ", res.GetResponse())
 	return res, nil
 }
 
@@ -98,6 +100,8 @@ func (*server) QueryTransfer(ctx context.Context, req *query.QueryTransferReques
 	//TODO SearchDocument contains code of evaluation from postfixQuery
 	resultArray, err := eng.SearchDocument(collection, postfixQuery)
 
+	fmt.Println("RESULT ARRAY : ", resultArray)
+
 	// if len(resultArray) == 0 {
 	// 	return &query.QueryTransferResponse{}, def.RESULTS_NOT_FOUND
 	// }
@@ -113,7 +117,10 @@ func (*server) QueryTransfer(ctx context.Context, req *query.QueryTransferReques
 		var resultInBytes = make(map[string][]byte)
 
 		//bytes to map[string][]byte
-		json.Unmarshal(v, &resultInBytes)
+		buf := bytes.NewBuffer(v)
+		dec := gob.NewDecoder(buf)
+		dec.Decode(&resultInBytes)
+
 		var each_response query.Response
 
 		each_response.Result = resultInBytes
@@ -138,7 +145,7 @@ func (*server) ConnectionTransfer(ctx context.Context, req *connection.Connectio
 
 	eng.DBName = database
 	eng.Namespace = namespace
-	eng.Store=store
+	eng.Store = store
 	print("----------ConnectDB function calling-----------")
 	err := eng.ConnectDB()
 	if err != nil {
@@ -153,7 +160,6 @@ func (*server) ConnectionTransfer(ctx context.Context, req *connection.Connectio
 
 func main() {
 	//create a new badger store from factory
-
 	//create tikv
 	// store = kvstore.NewTiKVFactory([]string{"127.0.0.1:2379"}, "")
 

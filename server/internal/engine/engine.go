@@ -413,7 +413,6 @@ func (e *Engine) InsertDocument(collection string,
 		return err
 	}
 
-
 	keyCache = append(keyCache, key)
 	valueCache = append(valueCache, dataInBytes)
 	//indexer
@@ -510,6 +509,7 @@ func (e *Engine) SearchDocument(collection string,
 	*/
 
 	fmt.Println("[[engine.go]] evaluate postfix expression")
+	fmt.Println("QUERY , COLLECTION : ", query, collectionID)
 	rb, err := e.EvaluatePostFix(query, collectionID)
 	if err != nil {
 		return [][]byte{}, err

@@ -1,11 +1,13 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"db-arch/model"
 	"db-arch/pb/connection"
 	"db-arch/pb/document"
 	"db-arch/pb/query"
+	"encoding/gob"
 	"os"
 	"strings"
 	"sync"
@@ -13,7 +15,6 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/joho/godotenv"
 	"github.com/nats-io/nats.go"
 	"google.golang.org/grpc"
@@ -229,34 +230,82 @@ func main() {
 	//close connection when program closes
 	defer conn.Close()
 
+	fmt.Println("Connected to NATS cluster")
 	nc, err = nats.Connect("0.0.0.0:4222")
 
 	nc.Subscribe("db.*", func(m *nats.Msg) {
 		subject := m.Subject
 		nextSub := strings.Split(subject, ".")[1]
+		fmt.Println("INSIDE DB")
+		gob.Register(map[string]interface{}{})
+		gob.Register([]interface{}{})
+		gob.Register([]map[string]interface{}{})
+
+		buf := bytes.NewBuffer(m.Data)
+		dec := gob.NewDecoder(buf)
+		requestData := make(map[string]interface{})
+		err := dec.Decode(&requestData)
+		if err != nil {
+			nc.Publish(m.Reply, []byte(strings.Split(err.Error(), "desc = ")[1]))
+		}
+
 		switch nextSub {
 		case "insertdocument":
-			doc := document.Document{}
-			err := proto.Unmarshal(m.Data, &doc)
-			if err != nil {
-				panic(err)
+			indices := make([]string, 0)
+			for _, v := range requestData["payload"].(map[string]interface{})["indices"].([]interface{}) {
+				indices = append(indices, v.(string))
 			}
 
+			data := make(map[string][]byte, 0)
+			for key, value := range requestData["payload"].(map[string]interface{})["data"].(map[string]interface{}) {
+				var buf bytes.Buffer
+				enc := gob.NewEncoder(&buf)
+				if err := enc.Encode(value); err != nil {
+					nc.Publish(m.Reply, []byte(strings.Split(err.Error(), "desc = ")[1]))
+				}
+				data[key] = buf.Bytes()
+			}
+
+			doc := document.Document{
+				Collection: (requestData["payload"].(map[string]interface{})["collection"]).(string),
+				Data:       data,
+				Indices:    indices,
+			}
+			//doc := document.Document{}
+			//err := proto.Unmarshal(m.Data, &doc)
+			//if err != nil {
+			//	panic(err)
+			//}
+			fmt.Println("DOC : ", doc)
 			res, err := sendDocument(c1, doc)
+
+			fmt.Println("RESPONSE : ", res)
 
 			if err != nil {
 				desc := strings.Split(err.Error(), " desc = ")[1]
 				nc.Publish(m.Reply, []byte(desc))
 			} else {
-				nc.Publish(m.Reply, []byte(res.GetResponse()))
+				var buf bytes.Buffer
+				enc := gob.NewEncoder(&buf)
+				data := make(map[string]interface{})
+				data["response"] = res.GetResponse()
+				if err := enc.Encode(data); err != nil {
+					log.Fatal(err)
+				}
+				nc.Publish(m.Reply, buf.Bytes())
 			}
-		case "connect":
+		case "connection":
 
-			con := connection.Connection{}
-			err := proto.Unmarshal(m.Data, &con)
-			if err != nil {
-				panic(err)
+			con := connection.Connection{
+				Database:  (requestData["payload"].(map[string]interface{})["database"]).(string),
+				Namespace: (requestData["payload"].(map[string]interface{})["namespace"]).(string),
 			}
+
+			//err := proto.Unmarshal(m.Data, &con)
+			//if err != nil {
+			//	panic(err)
+			//}
+
 			data := model.Connection{
 				Database:  con.GetDatabase(),
 				Namespace: con.GetNamespace(),
@@ -267,27 +316,66 @@ func main() {
 			if err != nil {
 				nc.Publish(m.Reply, []byte("failed to establish connection"))
 			} else {
-				nc.Publish(m.Reply, []byte(res.GetResponse()))
+				var buf bytes.Buffer
+				enc := gob.NewEncoder(&buf)
+				data := make(map[string]interface{})
+				data["response"] = res.GetResponse()
+				if err := enc.Encode(data); err != nil {
+					log.Fatal(err)
+				}
+				nc.Publish(m.Reply, buf.Bytes())
 			}
 
 		case "querydocument":
-			inquery := query.Query{}
-			err := proto.Unmarshal(m.Data, &inquery)
-			if err != nil {
-				panic(err)
+			inquery := query.Query{
+				Query: (requestData["payload"].(map[string]interface{})["query"]).(string),
 			}
-			rawquery := query.Query{
-				Query: inquery.GetQuery(),
-			}
+			//err := proto.Unmarshal(m.Data, &inquery)
+			//if err != nil {
+			//	panic(err)
+			//}
+			//rawquery := query.Query{
+			//	Query: inquery.GetQuery(),
+			//}
 
-			res, err := sendQuery(c2, rawquery)
+			res, err := sendQuery(c2, inquery)
 
 			if err != nil {
 				nc.Publish(m.Reply, []byte(strings.Split(err.Error(), "desc = ")[1]))
 			} else {
-				results, _ := proto.Marshal(res)
-				fmt.Println(res)
-				nc.Publish(m.Reply, results)
+				response := make(map[string]interface{})
+				var results = make([]map[string]interface{}, 0)
+				var resultInterface interface{}
+
+				if len(res.GetResponse()) > 0 {
+					fmt.Println("QUERY RESPONSE : ", res.GetResponse())
+
+					for _, responseValue := range res.GetResponse() {
+						var tempResult = make(map[string]interface{})
+						for fieldName, fieldValue := range responseValue.GetResult() {
+							buf := bytes.NewBuffer(fieldValue)
+							dec := gob.NewDecoder(buf)
+							dec.Decode(&resultInterface)
+							tempResult[fieldName] = resultInterface
+						}
+						results = append(results, tempResult)
+
+					}
+					response["data"] = results
+					response["status"] = "found"
+
+				} else {
+					response["data"] = results
+					response["status"] = "no query"
+				}
+				fmt.Println("RESPONSE : ")
+				var buf bytes.Buffer
+				enc := gob.NewEncoder(&buf)
+
+				if err := enc.Encode(response); err != nil {
+					log.Fatal(err)
+				}
+				nc.Publish(m.Reply, buf.Bytes())
 			}
 
 		}
@@ -321,11 +409,13 @@ func sendDocument(c document.DocumentServiceClient, d document.Document) (*docum
 	}
 
 	res, err := c.DocumentTransfer(context.Background(), req)
+	fmt.Println("ERROR : ", err)
 	if err != nil {
 		return res, err
 	}
 
 	fmt.Println("----------------RESPONSE----------------")
+	fmt.Println("RESPONSE : ", res)
 	return res, nil
 }
 
@@ -368,6 +458,7 @@ func sendConnection(c connection.ConnectionServiceClient, d model.Connection) (*
 
 	fmt.Println("----------CONNECTION RESPONSE------------")
 	fmt.Println("Connection recieved : ", res)
+
 	return res, nil
 
 }

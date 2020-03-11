@@ -6,7 +6,7 @@ import (
 	"db-arch/server/internal/engine/formatter"
 	marshal2 "db-arch/server/internal/engine/marshal"
 	"encoding/binary"
-	"encoding/json"
+	"encoding/gob"
 	"fmt"
 	"math/rand"
 	"net"
@@ -151,10 +151,10 @@ func findTypeOfData(data map[string][]byte) (map[string]string, map[string][]byt
 	newData := make(map[string][]byte)
 
 	for k, v := range data {
-		err := json.Unmarshal(v, &valueInterface)
-		if err != nil {
-			panic(err)
-		}
+		buf := bytes.NewBuffer(v)
+		dec := gob.NewDecoder(buf)
+		dec.Decode(&valueInterface)
+
 		fmt.Println("[inteface data] : ", valueInterface)
 
 		dataType := fmt.Sprintf("%T", valueInterface)
